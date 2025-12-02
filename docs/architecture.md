@@ -915,6 +915,349 @@ npx shadcn@latest init
 
 ---
 
+## Future Architecture: Multi-Broker-Support (Post-MVP)
+
+_Dieser Abschnitt dokumentiert die architektonischen Überlegungen für eine spätere Erweiterung auf mehrere Broker (z.B. Interactive Brokers zusätzlich zu MT5/IC Markets)._
+
+### Motivation
+
+- **Broker-Diversifikation:** Risikominimierung durch Verteilung auf mehrere Broker
+- **Asset-Erweiterung:** IB bietet Aktien, Optionen, Futures - nicht nur Forex/CFD
+- **Regulatorische Flexibilität:** Verschiedene Broker für verschiedene Jurisdiktionen
+
+### Architektur-Entscheidung: Adapter-Pattern
+
+**Status:** GEPLANT (Post-MVP)
+
+**Entscheidung:** Einführung eines Broker-Abstraktions-Layers mit Adapter-Pattern
+
+**Rationale:**
+- Agents bleiben broker-agnostisch
+- Neue Broker durch Implementierung der Interfaces hinzufügbar
+- Minimale Änderungen an bestehender Business-Logik
+
+### Geplante Modul-Struktur
+
+```
+backend/src/broker/
+├── interfaces/
+│   ├── __init__.py
+│   ├── base.py               # BrokerConnector ABC, BrokerType Enum
+│   ├── order_executor.py     # OrderExecutor ABC
+│   └── market_data.py        # MarketDataFeed ABC
+├── models/
+│   ├── __init__.py
+│   ├── symbol.py             # NormalizedSymbol, SymbolInfo
+│   ├── order.py              # OrderRequest, OrderResult, OrderStatus
+│   └── position.py           # Position, AccountInfo
+├── adapters/
+│   ├── __init__.py
+│   ├── mt5/
+│   │   ├── __init__.py
+│   │   ├── connector.py      # MT5Connector (aiomql)
+│   │   ├── order_executor.py
+│   │   ├── market_data.py
+│   │   └── symbol_mapper.py
+│   └── ib/
+│       ├── __init__.py
+│       ├── connector.py      # IBConnector (ib_insync)
+│       ├── order_executor.py
+│       ├── market_data.py
+│       └── symbol_mapper.py
+├── factory.py                # BrokerFactory
+├── symbol_mapper.py          # Zentrale Symbol-Registry
+├── manager.py                # BrokerManager (Connection Pool)
+└── exceptions.py             # BrokerError Hierarchy
+```
+
+### Interface-Definitionen
+
+**BrokerConnector (Basis-Interface):**
+
+```python
+from abc import ABC, abstractmethod
+from enum import Enum
+
+class BrokerType(str, Enum):
+    MT5 = "mt5"
+    INTERACTIVE_BROKERS = "ib"
+
+class BrokerCapability(str, Enum):
+    HEDGING = "hedging"           # MT5: ja, IB: nein (FIFO)
+    TRAILING_STOP = "trailing_stop"
+    BRACKET_ORDERS = "bracket_orders"
+    OCO_ORDERS = "oco_orders"
+
+class BrokerConnector(ABC):
+    broker_type: BrokerType
+
+    @abstractmethod
+    async def connect(self) -> None: ...
+
+    @abstractmethod
+    async def disconnect(self) -> None: ...
+
+    @abstractmethod
+    async def is_connected(self) -> bool: ...
+
+    @abstractmethod
+    def get_capabilities(self) -> set[BrokerCapability]: ...
+
+    @abstractmethod
+    async def get_account_info(self) -> AccountInfo: ...
+```
+
+**OrderExecutor:**
+
+```python
+class OrderExecutor(ABC):
+    @abstractmethod
+    async def submit_order(self, order: OrderRequest) -> OrderResult: ...
+
+    @abstractmethod
+    async def cancel_order(self, order_id: str) -> bool: ...
+
+    @abstractmethod
+    async def modify_order(self, order_id: str, modifications: OrderModification) -> OrderResult: ...
+
+    @abstractmethod
+    async def get_open_positions(self) -> list[Position]: ...
+
+    @abstractmethod
+    async def close_position(self, position_id: str, partial: Decimal | None = None) -> OrderResult: ...
+```
+
+### Kritische Broker-Unterschiede
+
+| Aspekt | MT5/IC Markets | Interactive Brokers |
+|--------|----------------|---------------------|
+| **API-Typ** | aiomql (IPC zu Wine) | ib_insync (TWS Gateway) |
+| **Symbol-Format** | `EURUSD` | Contract-Objekt (`EUR.USD`) |
+| **Position-Modell** | Hedging (mehrere pro Symbol) | FIFO (netto pro Symbol) |
+| **Trailing Stop** | Native Unterstützung | Manuell implementieren |
+| **Margin-Modell** | Einfacher Hebel | Portfolio Margin / Reg T |
+| **Gold-Handel** | Spot (`XAUUSD`) | Futures (`GC` auf COMEX) |
+
+### Symbol-Normalisierung
+
+**Zentrale Design-Entscheidung:** Kanonische Symbol-Namen im Format `BASE/QUOTE`
+
+```python
+# backend/src/broker/symbol_mapper.py
+SYMBOL_REGISTRY = {
+    "EUR/USD": {
+        BrokerType.MT5: "EURUSD",
+        BrokerType.INTERACTIVE_BROKERS: {
+            "symbol": "EUR",
+            "currency": "USD",
+            "sec_type": "CASH",
+            "exchange": "IDEALPRO"
+        }
+    },
+    "XAU/USD": {
+        BrokerType.MT5: "XAUUSD",
+        BrokerType.INTERACTIVE_BROKERS: {
+            "symbol": "GC",
+            "sec_type": "FUT",
+            "exchange": "COMEX"
+            # ACHTUNG: Futures haben Verfallsdatum!
+        }
+    }
+}
+```
+
+**MVP-Vorbereitung:** Ab sofort kanonische Symbol-Namen (`EUR/USD`) in der Datenbank speichern, nicht broker-spezifische (`EURUSD`).
+
+### Datenmodell-Erweiterungen (Post-MVP)
+
+**Team-Instanz:**
+
+```python
+class TeamInstance(Base):
+    # ... bestehende Felder ...
+
+    # NEU: Broker-Konfiguration
+    broker_type: Mapped[BrokerType] = mapped_column(
+        Enum(BrokerType),
+        default=BrokerType.MT5
+    )
+    broker_account_id: Mapped[str | None] = mapped_column(String, nullable=True)
+```
+
+**Trade-Modell:**
+
+```python
+class Trade(Base):
+    # ... bestehende Felder ...
+
+    # Broker-Tracking
+    broker_type: Mapped[BrokerType]
+    broker_order_id: Mapped[str]  # Native Broker-ID
+
+    # Symbol immer kanonisch speichern
+    symbol: Mapped[str]  # "EUR/USD", nicht "EURUSD"
+```
+
+### Risk Management Anpassungen
+
+```python
+class RiskManager:
+    def __init__(self, broker_capabilities: set[BrokerCapability]):
+        self._capabilities = broker_capabilities
+
+    async def validate_order(
+        self,
+        order: OrderRequest,
+        positions: list[Position]
+    ) -> ValidationResult:
+        warnings = []
+
+        # FIFO-Warnung für IB
+        if BrokerCapability.HEDGING not in self._capabilities:
+            existing = self._find_position(positions, order.symbol)
+            if existing and existing.side != order.side:
+                warnings.append(
+                    f"FIFO-Broker: Order wird zuerst {existing.quantity} "
+                    f"{existing.side.value} Position schließen"
+                )
+
+        # Trailing Stop Fallback
+        if order.trailing_stop_pct and BrokerCapability.TRAILING_STOP not in self._capabilities:
+            warnings.append(
+                "Broker unterstützt kein natives Trailing Stop - "
+                "wird softwareseitig simuliert"
+            )
+
+        return ValidationResult(approved=True, warnings=warnings)
+```
+
+### Factory-Pattern für Broker-Instanziierung
+
+```python
+# backend/src/broker/factory.py
+class BrokerFactory:
+    _ADAPTERS = {
+        BrokerType.MT5: (MT5Connector, MT5OrderExecutor, MT5MarketDataFeed),
+        BrokerType.INTERACTIVE_BROKERS: (IBConnector, IBOrderExecutor, IBMarketDataFeed),
+    }
+
+    @classmethod
+    def create(
+        cls,
+        broker_type: BrokerType,
+        config: BrokerConfig
+    ) -> tuple[BrokerConnector, OrderExecutor, MarketDataFeed]:
+        connector_cls, executor_cls, feed_cls = cls._ADAPTERS[broker_type]
+        connector = connector_cls(config)
+        return connector, executor_cls(connector), feed_cls(connector)
+```
+
+### Exception-Hierarchie
+
+```python
+# backend/src/broker/exceptions.py
+class BrokerError(TradingError):
+    """Basis für alle Broker-Fehler"""
+    code = "BROKER_ERROR"
+
+class BrokerConnectionError(BrokerError):
+    code = "BROKER_CONNECTION_ERROR"
+
+class OrderRejectedError(BrokerError):
+    code = "ORDER_REJECTED"
+
+class SymbolNotSupportedError(BrokerError):
+    code = "SYMBOL_NOT_SUPPORTED"
+
+class InsufficientMarginError(BrokerError):
+    code = "INSUFFICIENT_MARGIN"
+```
+
+### Migrations-Pfad
+
+**Phase 1 (MVP-kompatibel):**
+1. Kanonische Symbol-Namen in DB verwenden
+2. Agent-Layer broker-agnostisch halten
+3. `mt5/` Modul wie geplant implementieren
+
+**Phase 2 (Post-MVP):**
+1. `broker/interfaces/` erstellen
+2. MT5-Code in `broker/adapters/mt5/` refaktorieren
+3. Alembic-Migration: `broker_type` zu `team_instances` hinzufügen
+
+**Phase 3 (Multi-Broker):**
+1. `ib_insync` Dependency hinzufügen
+2. `broker/adapters/ib/` implementieren
+3. Symbol-Registry erweitern
+4. UI für Broker-Auswahl bei Team-Erstellung
+
+### Neue Dependencies (Post-MVP)
+
+```toml
+# pyproject.toml
+[project.optional-dependencies]
+ib = ["ib_insync>=0.9.86"]
+```
+
+### Architektur-Vorteile
+
+| Aspekt | Bewertung |
+|--------|-----------|
+| Agent-Layer Broker-Agnostik | ✅ Bereits geplant |
+| Repository-Pattern | ✅ Abstrahiert Datenzugriff |
+| Virtuelles Ledger pro Agent | ✅ Unabhängig vom Broker |
+| Shadow Portfolio | ✅ Cross-Broker kompatibel |
+| Service-Layer | ✅ Verwendet Interfaces |
+
+### Offene Entscheidungen (Post-MVP)
+
+1. **Multi-Account Support:** Ein Team pro Broker-Account oder ein Team über mehrere Accounts?
+2. **Position-Synchronisation:** Echtzeit-Reconciliation zwischen Broker und DB?
+3. **Margin-Aggregation:** Wie wird Margin über mehrere Broker aggregiert?
+4. **Failover-Strategie:** Automatischer Broker-Wechsel bei Ausfall?
+
+---
+
+## Architecture Completion Summary
+
+### Workflow Completion
+
+| Feld | Wert |
+|------|------|
+| **Status** | COMPLETED ✅ |
+| **Schritte abgeschlossen** | 8/8 |
+| **Datum** | 2025-12-01 |
+| **Dokument** | `/docs/architecture.md` |
+
+### Final Architecture Deliverables
+
+**Architektonische Entscheidungen:**
+- 15+ Kernentscheidungen dokumentiert (Tech-Stack, Patterns, Security)
+- Alle Versionen verifiziert
+- Vollständige Implementation Patterns
+- Multi-Broker-Erweiterungspfad dokumentiert (Post-MVP)
+
+**Abgedeckte Bereiche:**
+
+| Bereich | Status |
+|---------|--------|
+| Project Context Analysis | ✅ |
+| Technology Stack | ✅ |
+| Core Architectural Decisions | ✅ |
+| Implementation Patterns | ✅ |
+| Project Structure | ✅ |
+| Validation | ✅ |
+| Multi-Broker Extension (Post-MVP) | ✅ |
+
+### Nächste Schritte
+
+1. **Epics & Stories erstellen** – FRs in implementierbare Stories aufteilen
+2. **Projekt initialisieren** – Backend + Frontend Setup ausführen
+3. **MVP implementieren** – Team-System mit Paper Trading
+4. **(Post-MVP)** Multi-Broker-Abstraktions-Layer implementieren
+
+---
+
 **Architecture Status:** READY FOR IMPLEMENTATION ✅
 
 *Dieses Architektur-Dokument dient als Single Source of Truth für alle technischen Entscheidungen während der Implementierung.*
