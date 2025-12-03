@@ -25,9 +25,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     log.info(
         "application_startup",
         app_name=settings.app_name,
+        environment=settings.environment,
         debug=settings.debug,
-        host=settings.host,
-        port=settings.port,
+        host=settings.api_host,
+        port=settings.api_port,
     )
     yield
     # Shutdown

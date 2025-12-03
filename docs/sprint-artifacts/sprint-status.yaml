@@ -45,7 +45,7 @@ development_status:
   001-04-redis-integration-fuer-sessions-und-cache: done
   001-05-frontend-projekt-initialisieren: done
   001-06-docker-compose-fuer-lokale-entwicklung: done
-  001-07-pydantic-settings-und-environment-management: backlog
+  001-07-pydantic-settings-und-environment-management: done
   epic-001-retrospective: optional
 
   # Epic 002: Team-System & Agent-Rollen (8 Stories)
