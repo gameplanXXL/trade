@@ -6,10 +6,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.deps import RedisDep
 from src.api.exception_handlers import trading_error_handler, unhandled_exception_handler
 from src.config.settings import get_settings
 from src.core.exceptions import TradingError
 from src.core.logging import get_logger, setup_logging
+from src.core.redis import close_redis_pool
 
 settings = get_settings()
 
@@ -29,6 +31,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     yield
     # Shutdown
+    await close_redis_pool()
     log.info("application_shutdown")
 
 
@@ -54,6 +57,17 @@ app.add_middleware(
 
 
 @app.get("/health")
-async def health_check() -> dict[str, str]:
-    """Health check endpoint."""
-    return {"status": "ok"}
+async def health_check(redis: RedisDep) -> dict[str, str | dict[str, str]]:
+    """Health check endpoint with Redis connectivity check."""
+    redis_status = "ok"
+    try:
+        await redis.ping()
+    except Exception:
+        redis_status = "error"
+
+    return {
+        "status": "ok" if redis_status == "ok" else "degraded",
+        "services": {
+            "redis": redis_status,
+        },
+    }
