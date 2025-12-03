@@ -55,7 +55,7 @@ development_status:
   002-03-baseagent-abstract-class-implementieren: done
   002-04-crashdetector-agent-implementieren: done
   002-05-llmsignalanalyst-agent-implementieren: done
-  002-06-trader-agent-implementieren: backlog
+  002-06-trader-agent-implementieren: done
   002-07-riskmanager-agent-implementieren: backlog
   002-08-agent-factory-und-registry: backlog
   epic-002-retrospective: optional
