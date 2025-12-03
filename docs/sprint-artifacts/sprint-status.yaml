@@ -1,0 +1,123 @@
+# generated: 2025-12-03
+# project: trade
+# project_key: trade
+# tracking_system: file-system
+# story_location: docs/epics/stories
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic exists in epic file but not contexted
+#   - contexted: Epic tech context created (required before drafting stories)
+#   - in-progress: Stories are being worked on
+#   - done: Epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - drafted: Story file created in stories folder by *create-story
+#   - ready-for-dev: Draft approved and story context created by *story-ready
+#   - in-progress: Developer actively working on implementation by *dev-story
+#   - review: Implementation complete, ready for review by *code-review
+#   - done: Story completed by *story-done
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - completed: Retrospective has been done by *retrospective
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epics should be marked `in-progress` before stories can be marked beyond `backlog`
+# - SM typically drafts next story ONLY after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', dev reviews, then Dev moves to 'done'
+
+generated: 2025-12-03
+project: trade
+project_key: trade
+tracking_system: file-system
+story_location: docs/epics/stories
+
+development_status:
+  # Epic 001: Foundation & Projekt-Setup (7 Stories)
+  epic-001: in-progress
+  001-01-backend-projekt-initialisieren: done
+  001-02-exception-hierarchie-und-logging-einrichten: backlog
+  001-03-postgresql-timescaledb-setup-mit-alembic: backlog
+  001-04-redis-integration-fuer-sessions-und-cache: backlog
+  001-05-frontend-projekt-initialisieren: backlog
+  001-06-docker-compose-fuer-lokale-entwicklung: backlog
+  001-07-pydantic-settings-und-environment-management: backlog
+  epic-001-retrospective: optional
+
+  # Epic 002: Team-System & Agent-Rollen (8 Stories)
+  epic-002: backlog
+  002-01-team-yaml-schema-und-pydantic-models-definieren: backlog
+  002-02-yaml-team-loader-implementieren: backlog
+  002-03-baseagent-abstract-class-implementieren: backlog
+  002-04-crashdetector-agent-implementieren: backlog
+  002-05-llmsignalanalyst-agent-implementieren: backlog
+  002-06-trader-agent-implementieren: backlog
+  002-07-riskmanager-agent-implementieren: backlog
+  002-08-agent-factory-und-registry: backlog
+  epic-002-retrospective: optional
+
+  # Epic 003: Pipeline-Execution & Override-Engine (5 Stories)
+  epic-003: backlog
+  003-01-pipeline-executor-implementieren: backlog
+  003-02-override-rule-engine-implementieren: backlog
+  003-03-agent-status-management-normalwarningcrash: backlog
+  003-04-decision-audit-log-implementieren: backlog
+  003-05-team-orchestrator-mit-langgraph: backlog
+  epic-003-retrospective: optional
+
+  # Epic 004: MT5-Integration & Paper Trading (5 Stories)
+  epic-004: backlog
+  004-01-mt5-connector-mit-auto-reconnect: backlog
+  004-02-market-data-feed-implementieren: backlog
+  004-03-order-management-mit-trailing-stoploss: backlog
+  004-04-paper-trading-simulation: backlog
+  004-05-virtuelle-buchfuehrung-pro-team-instanz: backlog
+  epic-004-retrospective: optional
+
+  # Epic 005: Team-Instanz-Management (4 Stories)
+  epic-005: backlog
+  005-01-teaminstance-database-model: backlog
+  005-02-team-repository-mit-crud-operations: backlog
+  005-03-teams-rest-api-endpoints: backlog
+  005-04-team-lifecycle-manager: backlog
+  epic-005-retrospective: optional
+
+  # Epic 006: Performance Analytics (4 Stories)
+  epic-006: backlog
+  006-01-analytics-service-mit-metriken-berechnung: backlog
+  006-02-performance-historie-und-aggregationen: backlog
+  006-03-agent-aktivitaets-tracking: backlog
+  006-04-analytics-rest-api-endpoints: backlog
+  epic-006-retrospective: optional
+
+  # Epic 007: Dashboard - Übersicht & Real-time (5 Stories)
+  epic-007: backlog
+  007-01-websocket-server-mit-socketio: backlog
+  007-02-frontend-websocket-client-und-stores: backlog
+  007-03-dashboard-uebersicht-mit-healthbar: backlog
+  007-04-instancecard-komponente-mit-proportionaler-groesse: backlog
+  007-05-alert-system-mit-visueller-prioritaet: backlog
+  epic-007-retrospective: optional
+
+  # Epic 008: Dashboard - Details & Konfiguration (6 Stories)
+  epic-008: backlog
+  008-01-team-detail-ansicht-mit-tabs: backlog
+  008-02-trade-historie-mit-sortierung-und-filterung: backlog
+  008-03-agent-timeline-komponente: backlog
+  008-04-performance-charts-mit-tradingview: backlog
+  008-05-team-erstellung-via-ui: backlog
+  008-06-team-aktionen-pause-resume-stop-close-positions: backlog
+  epic-008-retrospective: optional
+
+  # Epic 009: Authentifizierung & Sicherheit (5 Stories)
+  epic-009: backlog
+  009-01-fernet-verschluesselung-fuer-credentials: backlog
+  009-02-session-basierte-authentifizierung: backlog
+  009-03-login-ui-im-frontend: backlog
+  009-04-llm-api-retry-logic: backlog
+  009-05-secrets-filterung-in-logs: backlog
+  epic-009-retrospective: optional
