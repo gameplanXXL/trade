@@ -130,17 +130,25 @@ class TestCrashDetectorStatusMapping:
     async def test_warning_status_medium_probability(
         self, detector: CrashDetector
     ) -> None:
-        """Test WARNING status with probability > 0.7."""
-        # Volatility 0.4 = probability 0.8, RSI 20 = probability 0.33
-        # Average = 0.565... but we need > 0.7
-        # Let's use higher volatility
-        context = {"volatility": 0.45, "rsi": 10, "market_data": {}}
-        await detector.check(context)
+        """Test WARNING status with 0.5 <= probability < threshold.
 
-        # Check probability is in WARNING range
-        # volatility 0.45 * 2 = 0.9, rsi 10 -> (30-10)/30 = 0.67
-        # average = (0.9 + 0.67) / 2 = 0.785
-        assert detector.status == AgentStatus.WARNING
+        Per Story 003-03 AC:
+        - NORMAL: crash_probability < 0.5
+        - WARNING: 0.5 <= crash_probability < threshold (0.9)
+        - CRASH: crash_probability >= threshold
+        """
+        # Need probability >= 0.5 and < 0.9
+        # Volatility 0.3 = probability 0.6, RSI 50 = probability 0
+        # Average = 0.3 which is < 0.5, not enough
+        # Use volatility 0.35 -> 0.7, rsi 50 -> 0
+        # Average = 0.35 -> too low
+        # Use only volatility indicator for clearer control
+        detector_single = CrashDetector(params={"threshold": 0.9, "indicators": ["volatility"]})
+        context = {"volatility": 0.35, "market_data": {}}  # 0.35 * 2 = 0.7
+        await detector_single.check(context)
+
+        # probability = 0.7, which is >= 0.5 and < 0.9
+        assert detector_single.status == AgentStatus.WARNING
 
     @pytest.mark.asyncio
     async def test_crash_status_high_probability(
@@ -169,6 +177,64 @@ class TestCrashDetectorStatusMapping:
         context_normal = {"volatility": 0.1, "rsi": 50, "market_data": {}}
         await detector.check(context_normal)
         assert detector.status == AgentStatus.NORMAL
+
+
+class TestCrashDetectorStatusThresholds:
+    """Tests for Story 003-03 status threshold requirements."""
+
+    @pytest.mark.asyncio
+    async def test_normal_below_0_5(self) -> None:
+        """Test NORMAL status when probability < 0.5."""
+        detector = CrashDetector(params={"threshold": 0.9, "indicators": ["volatility"]})
+        # volatility 0.2 * 2 = 0.4 < 0.5
+        context = {"volatility": 0.2, "market_data": {}}
+        await detector.check(context)
+        assert detector.status == AgentStatus.NORMAL
+
+    @pytest.mark.asyncio
+    async def test_warning_at_exactly_0_5(self) -> None:
+        """Test WARNING status when probability == 0.5."""
+        detector = CrashDetector(params={"threshold": 0.9, "indicators": ["volatility"]})
+        # volatility 0.25 * 2 = 0.5
+        context = {"volatility": 0.25, "market_data": {}}
+        await detector.check(context)
+        assert detector.status == AgentStatus.WARNING
+
+    @pytest.mark.asyncio
+    async def test_warning_between_0_5_and_threshold(self) -> None:
+        """Test WARNING status when 0.5 <= probability < threshold."""
+        detector = CrashDetector(params={"threshold": 0.9, "indicators": ["volatility"]})
+        # volatility 0.4 * 2 = 0.8 (>= 0.5, < 0.9)
+        context = {"volatility": 0.4, "market_data": {}}
+        await detector.check(context)
+        assert detector.status == AgentStatus.WARNING
+
+    @pytest.mark.asyncio
+    async def test_crash_at_threshold(self) -> None:
+        """Test CRASH status when probability == threshold."""
+        detector = CrashDetector(params={"threshold": 0.9, "indicators": ["volatility"]})
+        # volatility 0.45 * 2 = 0.9 == threshold
+        context = {"volatility": 0.45, "market_data": {}}
+        await detector.check(context)
+        assert detector.status == AgentStatus.CRASH
+
+    @pytest.mark.asyncio
+    async def test_crash_above_threshold(self) -> None:
+        """Test CRASH status when probability > threshold."""
+        detector = CrashDetector(params={"threshold": 0.9, "indicators": ["volatility"]})
+        # volatility 0.5 * 2 = 1.0 > 0.9
+        context = {"volatility": 0.5, "market_data": {}}
+        await detector.check(context)
+        assert detector.status == AgentStatus.CRASH
+
+    @pytest.mark.asyncio
+    async def test_custom_threshold(self) -> None:
+        """Test that custom threshold is respected."""
+        detector = CrashDetector(params={"threshold": 0.7, "indicators": ["volatility"]})
+        # volatility 0.35 * 2 = 0.7 == threshold
+        context = {"volatility": 0.35, "market_data": {}}
+        await detector.check(context)
+        assert detector.status == AgentStatus.CRASH
 
 
 class TestCrashDetectorIndicators:
@@ -270,9 +336,12 @@ class TestCrashDetectorDecisionType:
 
     @pytest.mark.asyncio
     async def test_decision_type_warning(self) -> None:
-        """Test decision type for WARNING status."""
-        detector = CrashDetector(params={"indicators": ["volatility"]})
-        context = {"volatility": 0.4, "market_data": {}}  # 0.4 * 2 = 0.8 > 0.7
+        """Test decision type for WARNING status.
+
+        Per Story 003-03: WARNING when 0.5 <= probability < threshold.
+        """
+        detector = CrashDetector(params={"threshold": 0.9, "indicators": ["volatility"]})
+        context = {"volatility": 0.35, "market_data": {}}  # 0.35 * 2 = 0.7 >= 0.5, < 0.9
 
         result = await detector.check(context)
 

@@ -73,12 +73,23 @@ class BaseAgent(ABC):
         old_status = self._status
         self._status = value
         if old_status != value:
-            log.info(
+            log.warning(
                 "agent_status_changed",
-                agent_name=self.name,
+                agent=self.name,
                 old_status=old_status.value,
                 new_status=value.value,
             )
+
+    def set_status(self, status: AgentStatus) -> None:
+        """Set the agent status with logging.
+
+        This method updates the agent's status and logs the change
+        if the status actually changed.
+
+        Args:
+            status: The new AgentStatus to set.
+        """
+        self.status = status
 
     @abstractmethod
     def _configure(self, params: dict[str, Any]) -> None:

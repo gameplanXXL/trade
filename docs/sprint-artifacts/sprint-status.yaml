@@ -61,21 +61,21 @@ development_status:
   epic-002-retrospective: optional
 
   # Epic 003: Pipeline-Execution & Override-Engine (5 Stories)
-  epic-003: backlog
-  003-01-pipeline-executor-implementieren: backlog
-  003-02-override-rule-engine-implementieren: backlog
-  003-03-agent-status-management-normalwarningcrash: backlog
-  003-04-decision-audit-log-implementieren: backlog
-  003-05-team-orchestrator-mit-langgraph: backlog
+  epic-003: in-progress
+  003-01-pipeline-executor-implementieren: review
+  003-02-override-rule-engine-implementieren: review
+  003-03-agent-status-management-normalwarningcrash: review
+  003-04-decision-audit-log-implementieren: review
+  003-05-team-orchestrator-mit-langgraph: review
   epic-003-retrospective: optional
 
   # Epic 004: MT5-Integration & Paper Trading (5 Stories)
-  epic-004: backlog
-  004-01-mt5-connector-mit-auto-reconnect: backlog
-  004-02-market-data-feed-implementieren: backlog
-  004-03-order-management-mit-trailing-stoploss: backlog
-  004-04-paper-trading-simulation: backlog
-  004-05-virtuelle-buchfuehrung-pro-team-instanz: backlog
+  epic-004: done
+  004-01-mt5-connector-mit-auto-reconnect: done
+  004-02-market-data-feed-implementieren: done
+  004-03-order-management-mit-trailing-stoploss: done
+  004-04-paper-trading-simulation: done
+  004-05-virtuelle-buchfuehrung-pro-team-instanz: done
   epic-004-retrospective: optional
 
   # Epic 005: Team-Instanz-Management (4 Stories)

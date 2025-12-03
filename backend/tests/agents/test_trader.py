@@ -4,10 +4,10 @@ import pytest
 
 from src.agents.base import AgentDecision, AgentStatus
 from src.agents.trader import (
+    SIZING_PERCENTAGES,
     Order,
     OrderSide,
     PositionSizing,
-    SIZING_PERCENTAGES,
     Trader,
     TraderMode,
 )

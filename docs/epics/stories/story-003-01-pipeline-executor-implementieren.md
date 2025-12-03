@@ -2,7 +2,7 @@
 epic: 003
 story: 01
 title: "Pipeline-Executor implementieren"
-status: backlog
+status: Ready for Review
 story_points: 5
 covers: [FR17, FR22]
 ---
@@ -54,18 +54,47 @@ class PipelineExecutor:
 **And** Context wird zwischen Schritten weitergegeben
 
 
-
 ## Tasks
 
-- [ ] PipelineContext Model erstellen
-- [ ] Step-Execution Logik
-- [ ] Context-Propagation zwischen Steps
-- [ ] Error Handling und Logging
-- [ ] Integration Tests schreiben
-**Technical Notes:**
+- [x] Task 1: PipelineContext Model erstellen
+- [x] Task 2: Step-Execution Logik
+- [x] Task 3: Context-Propagation zwischen Steps
+- [x] Task 4: Error Handling und Logging
+- [x] Task 5: Integration Tests schreiben
+
+## Technical Notes
 - Async für non-blocking LLM-Calls
 - Context accumulates alle Decisions
 - Performance-Target: < 1s für Pipeline (ohne LLM)
 
-**Prerequisites:** Story 2.2, 2.8
+## Prerequisites
+Story 2.2, 2.8
 
+## Dev Agent Record
+
+### Debug Log
+- 2025-12-03: Tests zuerst geschrieben (RED phase), dann Implementierung (GREEN phase)
+
+### Implementation Plan
+1. PipelineContext Pydantic Model mit team_id, symbols, market_data, decisions, current_step
+2. PipelineExecutor mit agents dict, context management
+3. execute_step() mit Agent/Method Validation und Error Handling
+4. run() für sequentielle Pipeline-Ausführung mit Context-Propagation
+5. Umfassende Tests für alle Acceptance Criteria
+
+### Completion Notes
+- PipelineContext Model implementiert mit allen Feldern laut AC
+- PipelineExecutor implementiert mit execute_step() und run()
+- Pipeline stoppt bei kritischen Fehlern (PipelineError)
+- Jeder Schritt wird mit Timestamp geloggt (pipeline_step_starting, pipeline_step_completed)
+- Context wird zwischen Schritten weitergegeben (decisions accumulate, current_step increments)
+- 16 Unit Tests geschrieben und bestanden
+- Alle 204 Tests der gesamten Test-Suite bestanden (keine Regressionen)
+- Linter (ruff) bestanden
+
+## File List
+- backend/src/teams/pipeline.py (neu)
+- backend/tests/teams/test_pipeline.py (neu)
+
+## Change Log
+- 2025-12-03: Story implementiert - PipelineContext, PipelineExecutor mit Tests

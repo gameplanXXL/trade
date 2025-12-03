@@ -2,7 +2,7 @@
 epic: 004
 story: 05
 title: "Virtuelle Buchführung pro Team-Instanz"
-status: backlog
+status: done
 story_points: 3
 covers: [FR28]
 ---
@@ -51,10 +51,44 @@ class Trade(Base):
     closed_at: Mapped[datetime | None]
 ```
 
+## Tasks
+
+- [x] TeamInstance Model erweitern (Budget-Felder)
+- [x] Trade Model implementieren
+- [x] BudgetManager Service erstellen
+- [x] allocate_budget (Trade-Open)
+- [x] release_budget (Trade-Close mit P/L)
+- [x] update_unrealized_pnl
+- [x] record_trade_open / record_trade_close
+- [x] get_budget_summary
+- [x] Unit Tests (18 Tests)
+
 **Technical Notes:**
-- Decimal für alle Geldbeträge (keine Float-Rundungsfehler)
+- Decimal (Numeric) für alle Geldbeträge (keine Float-Rundungsfehler)
 - Trade-Status: open → closed
-- Hypertable für trades (TimescaleDB)
+- Hypertable für trades vorbereitet (TimescaleDB)
+- Relationships zwischen TeamInstance und Trade
 
 **Prerequisites:** Story 4.4, 1.3
 
+---
+
+## Dev Agent Record
+
+### Implementation Notes (2025-12-03)
+- TeamInstance mit initial_budget, current_budget, realized_pnl, unrealized_pnl
+- Trade Model mit vollständigen Feldern für Tracking
+- BudgetManager als zentrale Service-Klasse für Budget-Operationen
+- Budget-Allokation bei Trade-Open, Release bei Trade-Close
+- get_budget_summary mit total_equity und total_return_pct
+- Relationships für einfachen Zugriff auf Trades/Decisions
+
+### File List
+- `backend/src/db/models.py` (erweitert: TeamInstance, Trade)
+- `backend/src/services/budget_manager.py` (neu)
+- `backend/src/services/__init__.py` (erweitert)
+- `backend/tests/services/test_budget_manager.py` (neu)
+
+### Test Results
+- 18 neue Tests für BudgetManager
+- Alle 382 Backend-Tests bestanden

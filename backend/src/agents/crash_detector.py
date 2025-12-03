@@ -198,17 +198,17 @@ class CrashDetector(BaseAgent):
     def _update_status(self, crash_probability: float) -> None:
         """Update agent status based on crash probability.
 
-        Status mapping:
-        - probability > threshold: CRASH
-        - probability > 0.7: WARNING
-        - otherwise: NORMAL
+        Status mapping per Story 003-03 AC:
+        - probability >= threshold: CRASH
+        - 0.5 <= probability < threshold: WARNING
+        - probability < 0.5: NORMAL
 
         Args:
             crash_probability: Calculated crash probability (0.0-1.0).
         """
         if crash_probability >= self.threshold:
-            self.status = AgentStatus.CRASH
-        elif crash_probability >= 0.7:
-            self.status = AgentStatus.WARNING
+            self.set_status(AgentStatus.CRASH)
+        elif crash_probability >= 0.5:
+            self.set_status(AgentStatus.WARNING)
         else:
-            self.status = AgentStatus.NORMAL
+            self.set_status(AgentStatus.NORMAL)

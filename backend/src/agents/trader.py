@@ -289,8 +289,13 @@ class Trader(BaseAgent):
             confidence=signal_confidence,
         )
 
-    async def close_all_positions(self) -> AgentDecision:
+    async def close_all_positions(
+        self, context: dict[str, Any] | None = None
+    ) -> AgentDecision:
         """Emergency close all open positions.
+
+        Args:
+            context: Optional execution context (ignored, for override compatibility).
 
         Returns:
             AgentDecision with close action.
