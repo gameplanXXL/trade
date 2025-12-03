@@ -40,7 +40,7 @@ development_status:
   # Epic 001: Foundation & Projekt-Setup (7 Stories)
   epic-001: in-progress
   001-01-backend-projekt-initialisieren: done
-  001-02-exception-hierarchie-und-logging-einrichten: backlog
+  001-02-exception-hierarchie-und-logging-einrichten: done
   001-03-postgresql-timescaledb-setup-mit-alembic: backlog
   001-04-redis-integration-fuer-sessions-und-cache: backlog
   001-05-frontend-projekt-initialisieren: backlog
