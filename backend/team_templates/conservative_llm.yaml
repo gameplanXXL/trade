@@ -1,0 +1,45 @@
+name: "Conservative LLM Team"
+version: "1.0.0"
+
+roles:
+  crash_detector:
+    class_name: CrashDetector
+    params:
+      threshold: 0.9
+      window_days: 30
+
+  analyst:
+    class_name: LLMSignalAnalyst
+    params:
+      model: "claude-sonnet-4-20250514"
+      min_confidence: 0.75
+
+  trader:
+    class_name: Trader
+    params:
+      position_sizing: "conservative"
+      max_positions: 2
+      trailing_stop_pct: 2.0
+
+  risk_manager:
+    class_name: RiskManager
+    params:
+      max_drawdown: 0.20
+
+pipeline:
+  - agent: crash_detector
+    method: check
+  - agent: analyst
+    method: generate_signal
+  - agent: trader
+    method: prepare_order
+  - agent: risk_manager
+    method: validate
+  - agent: trader
+    method: execute
+
+override_rules:
+  - name: "Crash Emergency"
+    condition: "crash_detector.status == CRASH"
+    action: "trader.close_all_positions()"
+    priority: 1

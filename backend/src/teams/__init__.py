@@ -1,5 +1,6 @@
 """Team management module for trading platform."""
 
+from src.teams.loader import TeamLoader
 from src.teams.schemas import (
     AgentConfig,
     AgentType,
@@ -14,4 +15,5 @@ __all__ = [
     "PipelineStep",
     "OverrideRule",
     "TeamTemplate",
+    "TeamLoader",
 ]
