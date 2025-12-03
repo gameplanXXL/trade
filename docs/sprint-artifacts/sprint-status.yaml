@@ -49,8 +49,8 @@ development_status:
   epic-001-retrospective: optional
 
   # Epic 002: Team-System & Agent-Rollen (8 Stories)
-  epic-002: backlog
-  002-01-team-yaml-schema-und-pydantic-models-definieren: backlog
+  epic-002: in-progress
+  002-01-team-yaml-schema-und-pydantic-models-definieren: done
   002-02-yaml-team-loader-implementieren: backlog
   002-03-baseagent-abstract-class-implementieren: backlog
   002-04-crashdetector-agent-implementieren: backlog
