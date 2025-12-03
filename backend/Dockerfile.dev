@@ -1,0 +1,27 @@
+# Development Dockerfile for Backend with hot-reload
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install all dependencies including dev
+RUN uv sync --frozen
+
+# Source code will be mounted as volume
+# COPY src ./src
+
+# Expose port
+EXPOSE 8000
+
+# Default command - will be overridden by docker-compose.dev.yml
+CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

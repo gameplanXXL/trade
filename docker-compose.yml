@@ -1,4 +1,46 @@
 services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trade-backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://trade:trade@postgres:5432/trade
+      - REDIS_URL=redis://redis:6379
+      - ENVIRONMENT=production
+    networks:
+      - trade-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: trade-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - trade-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   postgres:
     image: timescale/timescaledb:latest-pg16
     container_name: trade-postgres
@@ -10,6 +52,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - trade-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U trade -d trade"]
       interval: 5s
@@ -23,11 +67,17 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - trade-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+networks:
+  trade-network:
+    driver: bridge
 
 volumes:
   postgres_data:
