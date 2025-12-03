@@ -53,7 +53,7 @@ development_status:
   002-01-team-yaml-schema-und-pydantic-models-definieren: done
   002-02-yaml-team-loader-implementieren: done
   002-03-baseagent-abstract-class-implementieren: done
-  002-04-crashdetector-agent-implementieren: backlog
+  002-04-crashdetector-agent-implementieren: done
   002-05-llmsignalanalyst-agent-implementieren: backlog
   002-06-trader-agent-implementieren: backlog
   002-07-riskmanager-agent-implementieren: backlog
