@@ -57,7 +57,7 @@ development_status:
   002-05-llmsignalanalyst-agent-implementieren: done
   002-06-trader-agent-implementieren: done
   002-07-riskmanager-agent-implementieren: done
-  002-08-agent-factory-und-registry: backlog
+  002-08-agent-factory-und-registry: done
   epic-002-retrospective: optional
 
   # Epic 003: Pipeline-Execution & Override-Engine (5 Stories)
