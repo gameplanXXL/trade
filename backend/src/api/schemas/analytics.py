@@ -1,8 +1,10 @@
 """Analytics API schemas."""
 
+from datetime import datetime
 from decimal import Decimal
+from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.functional_serializers import PlainSerializer
 from typing_extensions import Annotated
 
@@ -41,3 +43,34 @@ class ActivitySummary(BaseModel):
     warnings: int = Field(..., description="Number of warning decisions")
     rejections: int = Field(..., description="Number of rejected decisions")
     overrides: int = Field(..., description="Number of override decisions")
+
+
+class PerformanceMetricResponse(BaseModel):
+    """Response schema for performance metric."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int = Field(..., description="Metric ID")
+    team_instance_id: int = Field(..., description="Team instance ID")
+    timestamp: datetime = Field(..., description="Timestamp of the metric")
+    period: str = Field(..., description="Time period (hourly, daily, weekly)")
+    pnl: DecimalAsStr = Field(..., description="Total P/L at this timestamp")
+    pnl_percent: float = Field(..., description="P/L as percentage")
+    win_rate: float = Field(..., description="Win rate at this timestamp")
+    sharpe_ratio: float | None = Field(None, description="Sharpe ratio")
+    max_drawdown: float = Field(..., description="Maximum drawdown")
+    trade_count: int = Field(..., description="Number of trades")
+
+
+class AgentDecisionResponse(BaseModel):
+    """Response schema for agent decision log."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int = Field(..., description="Decision ID")
+    team_instance_id: int = Field(..., description="Team instance ID")
+    agent_name: str = Field(..., description="Name of the agent")
+    decision_type: str = Field(..., description="Type of decision")
+    data: dict[str, Any] = Field(..., description="Decision data")
+    confidence: float | None = Field(None, description="Confidence score")
+    created_at: datetime = Field(..., description="When decision was made")
