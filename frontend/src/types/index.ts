@@ -92,3 +92,20 @@ export interface AgentDecision {
   confidence: number | null
   created_at: string
 }
+
+// Auth Types
+export interface User {
+  id: number
+  username: string
+  created_at: string
+}
+
+export interface LoginInput {
+  username: string
+  password: string
+}
+
+export interface LoginResponse {
+  user: User
+  message: string
+}

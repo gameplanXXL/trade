@@ -2,7 +2,7 @@
 epic: 009
 story: 03
 title: "Login-UI im Frontend"
-status: backlog
+status: completed
 story_points: 3
 covers: [FR50]
 ---
