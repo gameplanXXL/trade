@@ -70,7 +70,7 @@ export function usePauseTeam() {
 
       return { previousTeams, previousTeam }
     },
-    onError: (err, teamId, context) => {
+    onError: (_err, teamId, context) => {
       // Rollback on error
       if (context?.previousTeams) {
         queryClient.setQueryData(['teams'], context.previousTeams)
@@ -79,7 +79,7 @@ export function usePauseTeam() {
         queryClient.setQueryData(['team', teamId], context.previousTeam)
       }
     },
-    onSettled: (data, error, teamId) => {
+    onSettled: (_data, _error, teamId) => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['team', teamId] })
     },

@@ -7,6 +7,7 @@ import { MetricsRow } from './MetricsRow'
 import { QuickActions } from './QuickActions'
 import { TeamActions } from '@/features/teams/TeamActions'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 
 interface InstanceCardProps {
   team: Team
@@ -42,11 +43,11 @@ function calculateSizeClass(budget: number, totalBudget: number): string {
  */
 function getStatusColor(pnlPercent: number): string {
   if (pnlPercent > 0) {
-    return 'bg-success bg-opacity-5 border-l-success'
+    return 'bg-success/10 border-l-success'
   } else if (pnlPercent > -5) {
-    return 'bg-warning bg-opacity-5 border-l-warning'
+    return 'bg-warning/10 border-l-warning'
   } else {
-    return 'bg-critical bg-opacity-5 border-l-critical'
+    return 'bg-critical/10 border-l-critical'
   }
 }
 
@@ -79,49 +80,60 @@ export function InstanceCard({ team, totalBudget, onAction }: InstanceCardProps)
   }
 
   return (
-    <Card
-      className={cn(
-        'border-l-4 transition-all hover:shadow-lg',
-        sizeClass,
-        statusColor
-      )}
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{
+        layout: { duration: 0.3, ease: 'easeInOut' },
+        opacity: { duration: 0.2 },
+        scale: { duration: 0.2 }
+      }}
+      className={cn(sizeClass)}
     >
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg text-text-primary">
-              {team.name}
-            </CardTitle>
-            <p className="mt-1 text-sm text-text-secondary">{team.symbol}</p>
+      <Card
+        className={cn(
+          'border-l-4 h-full transition-all hover:shadow-lg',
+          statusColor
+        )}
+      >
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <CardTitle className="text-lg text-text-primary">
+                {team.name}
+              </CardTitle>
+              <p className="mt-1 text-sm text-text-secondary">{team.symbol}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={mode === 'live' ? 'purple' : 'gray'}>
+                {mode.toUpperCase()}
+              </Badge>
+              <TeamActions team={team} />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant={mode === 'live' ? 'purple' : 'gray'}>
-              {mode.toUpperCase()}
-            </Badge>
-            <TeamActions team={team} />
+        </CardHeader>
+
+        <CardContent>
+          {/* P/L Display - Large and prominent */}
+          <PnLDisplay value={team.current_pnl} percent={team.pnl_percent} />
+
+          {/* Budget Information */}
+          <div className="mb-4 flex items-center justify-between">
+            <span className="text-sm text-text-secondary">Budget</span>
+            <span className="font-mono text-sm font-medium text-text-primary">
+              ${currentBudget.toLocaleString()}
+            </span>
           </div>
-        </div>
-      </CardHeader>
 
-      <CardContent>
-        {/* P/L Display - Large and prominent */}
-        <PnLDisplay value={team.current_pnl} percent={team.pnl_percent} />
+          {/* Trading Metrics */}
+          <MetricsRow winRate={team.win_rate} maxDrawdown={team.max_drawdown} />
+        </CardContent>
 
-        {/* Budget Information */}
-        <div className="mb-4 flex items-center justify-between">
-          <span className="text-sm text-text-secondary">Budget</span>
-          <span className="font-mono text-sm font-medium text-text-primary">
-            ${currentBudget.toLocaleString()}
-          </span>
-        </div>
-
-        {/* Trading Metrics */}
-        <MetricsRow winRate={team.win_rate} maxDrawdown={team.max_drawdown} />
-      </CardContent>
-
-      <CardFooter>
-        <QuickActions onAction={handleAction} />
-      </CardFooter>
-    </Card>
+        <CardFooter>
+          <QuickActions onAction={handleAction} />
+        </CardFooter>
+      </Card>
+    </motion.div>
   )
 }

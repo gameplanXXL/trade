@@ -12,6 +12,8 @@ interface QuickActionsProps {
  * - Details: View detailed metrics and trade history
  * - Pause: Pause trading operations
  * - Close: Close all open positions (critical action)
+ *
+ * Touch-optimized with 48px minimum height on mobile devices
  */
 export function QuickActions({ onAction }: QuickActionsProps) {
   return (
@@ -20,7 +22,7 @@ export function QuickActions({ onAction }: QuickActionsProps) {
         variant="outline"
         size="sm"
         onClick={() => onAction('details')}
-        className="flex-1"
+        className="flex-1 min-h-[48px] md:min-h-0"
       >
         <Info className="mr-1 h-4 w-4" />
         Details
@@ -30,7 +32,7 @@ export function QuickActions({ onAction }: QuickActionsProps) {
         variant="outline"
         size="sm"
         onClick={() => onAction('pause')}
-        className="flex-1"
+        className="flex-1 min-h-[48px] md:min-h-0"
       >
         <Pause className="mr-1 h-4 w-4" />
         Pause
@@ -40,7 +42,7 @@ export function QuickActions({ onAction }: QuickActionsProps) {
         variant="destructive"
         size="sm"
         onClick={() => onAction('close')}
-        className="flex-1"
+        className="flex-1 min-h-[48px] md:min-h-0"
       >
         <XCircle className="mr-1 h-4 w-4" />
         Close

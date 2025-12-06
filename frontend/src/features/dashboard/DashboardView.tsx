@@ -1,9 +1,11 @@
 import { useEffect, useCallback } from 'react'
 import { useTeamStore } from '@/stores/teamStore'
+import { useAlertStore } from '@/stores/alertStore'
 import { wsClient } from '@/lib/socket'
 import { HealthBar } from './HealthBar'
 import { TeamGrid } from './TeamGrid'
 import { AlertList } from './AlertList'
+import { toast } from '@/hooks/useToast'
 import type { Alert, TeamStatusUpdate } from '@/types'
 
 /**
@@ -17,13 +19,26 @@ import type { Alert, TeamStatusUpdate } from '@/types'
  * Data is fetched from Zustand store and updated via WebSocket
  */
 export function DashboardView() {
-  const { teams, alerts, fetchTeams, removeAlert, addAlert, updateTeamStatus, isLoading, error } =
-    useTeamStore()
+  const { teams, fetchTeams, updateTeamStatus, isLoading, error } = useTeamStore()
+  const { alerts, addAlert, removeAlert } = useAlertStore()
 
   // WebSocket callbacks
   const handleAlert = useCallback(
     (alert: Alert) => {
       addAlert(alert)
+
+      // Show toast notification for new alerts
+      const severityVariant = {
+        crash: 'destructive',
+        warning: 'warning',
+        info: 'info',
+      } as const
+
+      toast({
+        variant: severityVariant[alert.severity],
+        title: alert.severity === 'crash' ? 'Critical Alert' : alert.severity === 'warning' ? 'Warning' : 'Info',
+        description: alert.message,
+      })
     },
     [addAlert]
   )
