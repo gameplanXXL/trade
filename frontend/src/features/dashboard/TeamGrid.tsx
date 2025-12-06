@@ -1,6 +1,8 @@
 import type { Team } from '@/types'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { TrendingUp, TrendingDown, Activity } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { TrendingUp } from 'lucide-react'
+import { InstanceCard } from './InstanceCard'
+import { useMemo } from 'react'
 
 interface TeamGridProps {
   teams: Team[]
@@ -9,11 +11,25 @@ interface TeamGridProps {
 /**
  * TeamGrid Component
  *
- * Displays team cards in a responsive grid:
+ * Displays team instance cards with proportional sizing:
+ * - Desktop: Auto-fit grid with proportional sizes based on budget
  * - Mobile: Stack (1 column)
- * - Desktop: Grid (2-3 columns)
  */
 export function TeamGrid({ teams }: TeamGridProps) {
+  // Calculate total budget for proportional sizing
+  const totalBudget = useMemo(() => {
+    return teams.reduce((sum, team) => {
+      const budget = team.current_budget ?? team.budget
+      return sum + budget
+    }, 0)
+  }, [teams])
+
+  // Handle team actions
+  const handleAction = (teamId: number, action: 'details' | 'pause' | 'close') => {
+    // TODO: Implement action handlers
+    console.log(`Team ${teamId}: ${action}`)
+  }
+
   if (teams.length === 0) {
     return (
       <div className="mx-auto max-w-7xl px-6 py-12">
@@ -39,104 +55,18 @@ export function TeamGrid({ teams }: TeamGridProps) {
     <div className="mx-auto max-w-7xl px-6 py-8">
       <h2 className="mb-6 text-2xl font-bold text-text-primary">Active Teams</h2>
 
-      {/* Responsive Grid: Stack on mobile, Grid on desktop */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {/* Responsive Grid with proportional sizing */}
+      <div className="grid auto-rows-fr grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {teams.map((team) => (
-          <TeamCard key={team.id} team={team} />
+          <InstanceCard
+            key={team.id}
+            team={team}
+            totalBudget={totalBudget}
+            onAction={(action) => handleAction(team.id, action)}
+          />
         ))}
       </div>
     </div>
   )
 }
 
-/**
- * TeamCard Component
- *
- * Displays individual team information with P/L status
- */
-function TeamCard({ team }: { team: Team }) {
-  const isProfitable = team.pnl_percent >= 0
-  const isCritical = team.pnl_percent <= -5
-  const isWarning = team.pnl_percent < 0 && team.pnl_percent > -5
-
-  // Determine card border color based on status
-  let borderColorClass = 'border-border'
-  if (isCritical) {
-    borderColorClass = 'border-critical'
-  } else if (isWarning) {
-    borderColorClass = 'border-warning'
-  } else if (isProfitable) {
-    borderColorClass = 'border-success'
-  }
-
-  return (
-    <Card className={`border-l-4 ${borderColorClass} transition-all hover:shadow-lg`}>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-lg text-text-primary">
-              {team.name}
-            </CardTitle>
-            <p className="mt-1 text-sm text-text-secondary">{team.symbol}</p>
-          </div>
-          <div
-            className={`rounded-full px-2 py-1 text-xs font-medium ${
-              team.status === 'active'
-                ? 'bg-success bg-opacity-10 text-success'
-                : team.status === 'paused'
-                  ? 'bg-warning bg-opacity-10 text-warning'
-                  : 'bg-text-muted bg-opacity-10 text-text-muted'
-            }`}
-          >
-            {team.status.toUpperCase()}
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent>
-        {/* Budget */}
-        <div className="mb-4 flex items-center justify-between">
-          <span className="text-sm text-text-secondary">Budget</span>
-          <span className="font-mono text-sm font-medium text-text-primary">
-            ${team.budget.toLocaleString()}
-          </span>
-        </div>
-
-        {/* P/L */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-text-secondary">P/L</span>
-          <div className="flex items-center gap-2">
-            {isProfitable ? (
-              <TrendingUp className="h-4 w-4 text-success" />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-critical" />
-            )}
-            <span
-              className={`font-mono text-sm font-bold ${
-                isProfitable ? 'text-success' : 'text-critical'
-              }`}
-            >
-              {isProfitable ? '+' : ''}
-              {team.pnl_percent.toFixed(2)}%
-            </span>
-            <span
-              className={`font-mono text-xs ${
-                isProfitable ? 'text-success-muted' : 'text-critical-muted'
-              }`}
-            >
-              (${team.current_pnl.toFixed(2)})
-            </span>
-          </div>
-        </div>
-
-        {/* Paper Trading Badge */}
-        {team.is_paper_trading && (
-          <div className="mt-3 flex items-center gap-1 text-xs text-text-muted">
-            <Activity className="h-3 w-3" />
-            <span>Paper Trading</span>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}

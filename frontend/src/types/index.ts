@@ -23,9 +23,13 @@ export interface Team {
   status: TeamStatus
   symbol: string
   budget: number
+  current_budget?: number
   current_pnl: number
   pnl_percent: number
   is_paper_trading: boolean
+  mode?: 'live' | 'paper'
+  win_rate?: number
+  max_drawdown?: number
   created_at: string
   updated_at: string
 }
