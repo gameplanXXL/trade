@@ -131,7 +131,8 @@ def stop_scheduler() -> None:
         log.warning("scheduler_not_running")
         return
 
-    scheduler.shutdown(wait=True)
+    if scheduler.running:
+        scheduler.shutdown(wait=True)
     scheduler = None
 
     log.info("scheduler_stopped")
