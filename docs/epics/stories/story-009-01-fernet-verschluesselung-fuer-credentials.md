@@ -2,7 +2,7 @@
 epic: 009
 story: 01
 title: "Fernet-Verschlüsselung für Credentials"
-status: backlog
+status: completed
 story_points: 2
 covers: [FR49]
 ---
