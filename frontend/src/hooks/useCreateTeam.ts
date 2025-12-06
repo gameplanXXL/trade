@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api';
 
 export interface TeamCreateInput {
   name: string;
@@ -13,26 +14,19 @@ interface TeamResponse {
   name: string;
   template_name: string;
   symbols: string[];
-  budget: number;
+  initial_budget: number;
+  current_budget: number;
   mode: 'paper' | 'live';
   status: string;
+  realized_pnl: number;
+  unrealized_pnl: number;
+  created_at: string;
+  updated_at: string | null;
 }
 
 async function createTeam(data: TeamCreateInput): Promise<TeamResponse> {
-  const response = await fetch('/api/teams/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to create team');
-  }
-
-  return response.json();
+  const response = await apiClient.post<TeamResponse>('/api/teams/', data);
+  return response.data;
 }
 
 export function useCreateTeam() {

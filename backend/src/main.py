@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.deps import RedisDep
 from src.api.exception_handlers import trading_error_handler, unhandled_exception_handler
-from src.api.routes import analytics_router, auth_router, teams_router, trades_router
+from src.api.routes import analytics_router, auth_router, teams_router, templates_router, trades_router
 from src.api.websocket import sio
 from src.config.settings import get_settings
 from src.core.exceptions import TradingError
@@ -73,6 +73,7 @@ app.add_middleware(
 app.include_router(analytics_router)
 app.include_router(auth_router)
 app.include_router(teams_router)
+app.include_router(templates_router)
 app.include_router(trades_router)
 
 

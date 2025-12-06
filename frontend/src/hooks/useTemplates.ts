@@ -1,18 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api';
 
-interface Template {
+export interface Template {
   name: string;
+  display_name: string;
   description: string;
+  version: string;
   roles: string[];
   pipeline: string;
 }
 
 async function fetchTemplates(): Promise<Template[]> {
-  const response = await fetch('/api/team-templates/');
-  if (!response.ok) {
-    throw new Error('Failed to fetch templates');
-  }
-  return response.json();
+  const response = await apiClient.get<Template[]>('/api/team-templates/');
+  return response.data;
 }
 
 export function useTemplates() {

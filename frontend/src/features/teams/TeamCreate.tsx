@@ -74,6 +74,10 @@ export function TeamCreate() {
 
   const isLiveMode = form.watch('mode') === 'live';
   const selectedSymbols = form.watch('symbols');
+  const selectedTemplateName = form.watch('template_name');
+
+  // Find the selected template for preview
+  const selectedTemplate = templates.find(t => t.name === selectedTemplateName);
 
   const toggleSymbol = (symbol: string) => {
     const current = selectedSymbols || [];
@@ -134,7 +138,7 @@ export function TeamCreate() {
                       <SelectContent>
                         {templates.map((template) => (
                           <SelectItem key={template.name} value={template.name}>
-                            {template.name}
+                            {template.display_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -146,6 +150,29 @@ export function TeamCreate() {
                   </FormItem>
                 )}
               />
+
+              {/* Template Preview */}
+              {selectedTemplate && (
+                <div className="rounded-lg border p-4 bg-muted/50">
+                  <h4 className="font-semibold mb-2">Template-Vorschau</h4>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-medium">Version:</span>{' '}
+                      {selectedTemplate.version}
+                    </div>
+                    <div>
+                      <span className="font-medium">Rollen:</span>{' '}
+                      {selectedTemplate.roles.join(', ')}
+                    </div>
+                    <div>
+                      <span className="font-medium">Pipeline:</span>
+                      <div className="mt-1 font-mono text-xs bg-background p-2 rounded">
+                        {selectedTemplate.pipeline}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Symbols Selection */}
               <FormField
