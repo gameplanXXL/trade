@@ -1,8 +1,10 @@
 import type { Team } from '@/types'
 import { Card, CardContent } from '@/components/ui/card'
-import { TrendingUp } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { TrendingUp, Plus } from 'lucide-react'
 import { InstanceCard } from './InstanceCard'
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 interface TeamGridProps {
   teams: Team[]
@@ -17,6 +19,8 @@ interface TeamGridProps {
  * - Critical instances sorted to top
  */
 export function TeamGrid({ teams }: TeamGridProps) {
+  const navigate = useNavigate()
+
   // Calculate total budget for proportional sizing
   const totalBudget = useMemo(() => {
     return teams.reduce((sum, team) => {
@@ -59,10 +63,14 @@ export function TeamGrid({ teams }: TeamGridProps) {
             <h3 className="mb-2 text-xl font-semibold text-text-primary">
               No Teams Configured
             </h3>
-            <p className="max-w-md text-text-secondary">
+            <p className="max-w-md text-text-secondary mb-6">
               Create your first trading team to start monitoring the markets
               with AI-powered agents.
             </p>
+            <Button onClick={() => navigate('/teams/create')}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Team
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -71,7 +79,13 @@ export function TeamGrid({ teams }: TeamGridProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
-      <h2 className="mb-6 text-2xl font-bold text-text-primary">Active Teams</h2>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-text-primary">Active Teams</h2>
+        <Button onClick={() => navigate('/teams/create')}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create Team
+        </Button>
+      </div>
 
       {/* Responsive Grid with proportional sizing */}
       <div className="grid auto-rows-fr grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
