@@ -1,6 +1,7 @@
 """Analytics service for calculating trading metrics."""
 
 import statistics
+from datetime import datetime
 from decimal import Decimal
 
 import structlog
@@ -9,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.schemas.analytics import PerformanceSummary
 from src.core.exceptions import TeamNotFoundError
-from src.db.models import TeamInstance, Trade
+from src.db.models import PerformanceMetric, TeamInstance, Trade
 
 log = structlog.get_logger()
 
@@ -341,3 +342,163 @@ class AnalyticsService:
         )
 
         return summary
+
+    async def aggregate_performance(
+        self, team_id: int, period: str = "hourly"
+    ) -> PerformanceMetric:
+        """Aggregate and store performance metrics for a team instance.
+
+        Calculates current performance metrics and stores them in the
+        performance_metrics table for historical tracking.
+
+        Args:
+            team_id: Team instance ID
+            period: Time period ('hourly', 'daily', 'weekly')
+
+        Returns:
+            Created PerformanceMetric instance
+
+        Raises:
+            TeamNotFoundError: If team instance not found
+            ValueError: If period is invalid
+        """
+        if period not in ("hourly", "daily", "weekly"):
+            raise ValueError(f"Invalid period: {period}. Must be 'hourly', 'daily', or 'weekly'")
+
+        log.info("aggregating_performance", team_id=team_id, period=period)
+
+        # Get team instance to verify it exists
+        await self._get_team_instance(team_id)
+
+        # Calculate current metrics
+        summary = await self.get_performance_summary(team_id)
+
+        # Create performance metric record
+        metric = PerformanceMetric(
+            team_instance_id=team_id,
+            timestamp=datetime.now(),
+            period=period,
+            pnl=summary.total_pnl,
+            pnl_percent=summary.total_pnl_percent,
+            win_rate=summary.win_rate,
+            sharpe_ratio=summary.sharpe_ratio,
+            max_drawdown=summary.max_drawdown,
+            trade_count=summary.total_trades,
+        )
+
+        self.session.add(metric)
+        await self.session.commit()
+        await self.session.refresh(metric)
+
+        log.info(
+            "performance_aggregated",
+            team_id=team_id,
+            period=period,
+            metric_id=metric.id,
+            pnl=str(metric.pnl),
+            trade_count=metric.trade_count,
+        )
+
+        return metric
+
+    async def get_performance_history(
+        self,
+        team_id: int,
+        period: str = "hourly",
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        limit: int = 100,
+    ) -> list[PerformanceMetric]:
+        """Get historical performance metrics for a team instance.
+
+        Retrieves stored performance metrics for trend analysis.
+
+        Args:
+            team_id: Team instance ID
+            period: Time period filter ('hourly', 'daily', 'weekly')
+            start_time: Optional start time filter
+            end_time: Optional end time filter
+            limit: Maximum number of records to return
+
+        Returns:
+            List of PerformanceMetric instances ordered by timestamp (newest first)
+
+        Raises:
+            TeamNotFoundError: If team instance not found
+        """
+        # Verify team exists
+        await self._get_team_instance(team_id)
+
+        log.info(
+            "fetching_performance_history",
+            team_id=team_id,
+            period=period,
+            start_time=start_time,
+            end_time=end_time,
+            limit=limit,
+        )
+
+        # Build query
+        stmt = (
+            select(PerformanceMetric)
+            .where(PerformanceMetric.team_instance_id == team_id)
+            .where(PerformanceMetric.period == period)
+            .order_by(PerformanceMetric.timestamp.desc())
+            .limit(limit)
+        )
+
+        if start_time:
+            stmt = stmt.where(PerformanceMetric.timestamp >= start_time)
+
+        if end_time:
+            stmt = stmt.where(PerformanceMetric.timestamp <= end_time)
+
+        result = await self.session.execute(stmt)
+        metrics = list(result.scalars().all())
+
+        log.info(
+            "performance_history_fetched",
+            team_id=team_id,
+            period=period,
+            count=len(metrics),
+        )
+
+        return metrics
+
+    async def get_latest_metric(
+        self, team_id: int, period: str = "hourly"
+    ) -> PerformanceMetric | None:
+        """Get the most recent performance metric for a team instance.
+
+        Args:
+            team_id: Team instance ID
+            period: Time period filter ('hourly', 'daily', 'weekly')
+
+        Returns:
+            Latest PerformanceMetric or None if no metrics exist
+
+        Raises:
+            TeamNotFoundError: If team instance not found
+        """
+        # Verify team exists
+        await self._get_team_instance(team_id)
+
+        stmt = (
+            select(PerformanceMetric)
+            .where(PerformanceMetric.team_instance_id == team_id)
+            .where(PerformanceMetric.period == period)
+            .order_by(PerformanceMetric.timestamp.desc())
+            .limit(1)
+        )
+
+        result = await self.session.execute(stmt)
+        metric = result.scalar_one_or_none()
+
+        log.info(
+            "latest_metric_fetched",
+            team_id=team_id,
+            period=period,
+            found=metric is not None,
+        )
+
+        return metric

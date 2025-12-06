@@ -1,6 +1,6 @@
 """Tests for Analytics Service."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
@@ -8,7 +8,7 @@ import pytest
 
 from src.api.schemas.analytics import PerformanceSummary
 from src.core.exceptions import TeamNotFoundError
-from src.db.models import TeamInstance, Trade
+from src.db.models import PerformanceMetric, TeamInstance, Trade
 from src.services.analytics import AnalyticsService
 
 
@@ -51,8 +51,8 @@ def mock_closed_trades() -> list[Trade]:
         trade.side = "BUY"
         trade.status = "closed"
         trade.pnl = Decimal("100.00")
-        trade.opened_at = datetime(2025, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-        trade.closed_at = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        trade.opened_at = datetime(2025, 1, 1, 10, 0, 0, tzinfo=UTC)
+        trade.closed_at = datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
         trades.append(trade)
 
     # Losing trades
@@ -64,8 +64,8 @@ def mock_closed_trades() -> list[Trade]:
         trade.side = "SELL"
         trade.status = "closed"
         trade.pnl = Decimal("-50.00")
-        trade.opened_at = datetime(2025, 1, 2, 10, 0, 0, tzinfo=timezone.utc)
-        trade.closed_at = datetime(2025, 1, 2, 12, 0, 0, tzinfo=timezone.utc)
+        trade.opened_at = datetime(2025, 1, 2, 10, 0, 0, tzinfo=UTC)
+        trade.closed_at = datetime(2025, 1, 2, 12, 0, 0, tzinfo=UTC)
         trades.append(trade)
 
     return trades
@@ -451,3 +451,222 @@ class TestGetPerformanceSummary:
         assert summary.losing_trades == 0
         assert summary.sharpe_ratio == 0.0
         assert summary.max_drawdown == 0.0
+
+
+class TestAggregatePerformance:
+    """Tests for aggregate_performance method."""
+
+    async def test_aggregate_performance_hourly(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test aggregating performance metrics for hourly period."""
+        # Mock get_team_instance
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        # Mock get_performance_summary results
+        summary_result = MagicMock()
+        summary_result.one_or_none.return_value = (10, 6)
+
+        sharpe_result = MagicMock()
+        sharpe_result.scalars.return_value.all.return_value = [
+            Decimal("100.00"),
+            Decimal("200.00"),
+        ]
+
+        drawdown_result = MagicMock()
+        drawdown_result.scalars.return_value.all.return_value = [
+            Decimal("100.00"),
+            Decimal("200.00"),
+        ]
+
+        mock_session.execute.side_effect = [
+            team_result,
+            team_result,
+            summary_result,
+            sharpe_result,
+            drawdown_result,
+        ]
+
+        metric = await analytics_service.aggregate_performance(1, period="hourly")
+
+        assert isinstance(metric, PerformanceMetric)
+        assert metric.team_instance_id == 1
+        assert metric.period == "hourly"
+        assert metric.pnl == Decimal("500.00")
+        assert metric.trade_count == 10
+        mock_session.add.assert_called_once()
+        mock_session.commit.assert_called_once()
+
+    async def test_aggregate_performance_invalid_period(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+    ) -> None:
+        """Test aggregating performance with invalid period raises ValueError."""
+        with pytest.raises(ValueError) as exc_info:
+            await analytics_service.aggregate_performance(1, period="invalid")
+
+        assert "Invalid period" in str(exc_info.value)
+
+    async def test_aggregate_performance_team_not_found(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+    ) -> None:
+        """Test aggregating performance for non-existent team raises error."""
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_session.execute.return_value = mock_result
+
+        with pytest.raises(TeamNotFoundError):
+            await analytics_service.aggregate_performance(999, period="daily")
+
+
+class TestGetPerformanceHistory:
+    """Tests for get_performance_history method."""
+
+    async def test_get_performance_history(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test getting performance history."""
+        # Mock team instance check
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        # Mock performance metrics
+        metrics = [
+            MagicMock(spec=PerformanceMetric),
+            MagicMock(spec=PerformanceMetric),
+            MagicMock(spec=PerformanceMetric),
+        ]
+        for i, metric in enumerate(metrics):
+            metric.id = i + 1
+            metric.team_instance_id = 1
+            metric.period = "hourly"
+            metric.timestamp = datetime.now(UTC) - timedelta(hours=i)
+            metric.pnl = Decimal("100.00") * (i + 1)
+
+        history_result = MagicMock()
+        history_result.scalars.return_value.all.return_value = metrics
+
+        mock_session.execute.side_effect = [team_result, history_result]
+
+        history = await analytics_service.get_performance_history(1, period="hourly")
+
+        assert len(history) == 3
+        assert all(isinstance(m, PerformanceMetric) for m in history)
+        assert history[0].period == "hourly"
+
+    async def test_get_performance_history_with_time_filter(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test getting performance history with time filters."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        history_result = MagicMock()
+        history_result.scalars.return_value.all.return_value = []
+
+        mock_session.execute.side_effect = [team_result, history_result]
+
+        start_time = datetime.now(UTC) - timedelta(days=7)
+        end_time = datetime.now(UTC)
+
+        history = await analytics_service.get_performance_history(
+            1, period="daily", start_time=start_time, end_time=end_time
+        )
+
+        assert isinstance(history, list)
+
+    async def test_get_performance_history_empty(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test getting performance history with no records."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        history_result = MagicMock()
+        history_result.scalars.return_value.all.return_value = []
+
+        mock_session.execute.side_effect = [team_result, history_result]
+
+        history = await analytics_service.get_performance_history(1, period="weekly")
+
+        assert history == []
+
+
+class TestGetLatestMetric:
+    """Tests for get_latest_metric method."""
+
+    async def test_get_latest_metric_found(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test getting latest metric when it exists."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        metric = MagicMock(spec=PerformanceMetric)
+        metric.id = 1
+        metric.team_instance_id = 1
+        metric.period = "hourly"
+        metric.timestamp = datetime.now(UTC)
+        metric.pnl = Decimal("500.00")
+
+        metric_result = MagicMock()
+        metric_result.scalar_one_or_none.return_value = metric
+
+        mock_session.execute.side_effect = [team_result, metric_result]
+
+        latest = await analytics_service.get_latest_metric(1, period="hourly")
+
+        assert latest is not None
+        assert isinstance(latest, PerformanceMetric)
+        assert latest.period == "hourly"
+
+    async def test_get_latest_metric_not_found(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test getting latest metric when none exists."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        metric_result = MagicMock()
+        metric_result.scalar_one_or_none.return_value = None
+
+        mock_session.execute.side_effect = [team_result, metric_result]
+
+        latest = await analytics_service.get_latest_metric(1, period="daily")
+
+        assert latest is None
+
+    async def test_get_latest_metric_team_not_found(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+    ) -> None:
+        """Test getting latest metric for non-existent team raises error."""
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_session.execute.return_value = mock_result
+
+        with pytest.raises(TeamNotFoundError):
+            await analytics_service.get_latest_metric(999, period="hourly")

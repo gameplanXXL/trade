@@ -5,7 +5,8 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any
 
-from sqlalchemy import DateTime, Enum as SQLEnum, Float, ForeignKey, Index, Integer, Numeric, String, func
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, Numeric, String, func
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -247,4 +248,54 @@ class AgentDecisionLog(Base):
         return (
             f"<AgentDecisionLog(id={self.id}, agent={self.agent_name!r}, "
             f"type={self.decision_type!r})>"
+        )
+
+
+class PerformanceMetric(Base):
+    """Performance metrics aggregated over time - Story 006-02.
+
+    Stores pre-calculated performance metrics for teams at different time periods
+    (hourly, daily, weekly) for efficient historical trend analysis.
+
+    Note: This table is designed for TimescaleDB hypertable conversion.
+    See Alembic migration for hypertable setup with retention policies.
+    """
+
+    __tablename__ = "performance_metrics"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    team_instance_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("team_instances.id"),
+        nullable=False,
+    )
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    period: Mapped[str] = mapped_column(
+        String(10),
+        nullable=False,
+    )  # hourly, daily, weekly
+    pnl: Mapped[Decimal] = mapped_column(
+        Numeric(precision=18, scale=2),
+        nullable=False,
+    )
+    pnl_percent: Mapped[float] = mapped_column(Float, nullable=False)
+    win_rate: Mapped[float] = mapped_column(Float, nullable=False)
+    sharpe_ratio: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_drawdown: Mapped[float] = mapped_column(Float, nullable=False)
+    trade_count: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    __table_args__ = (
+        Index("ix_performance_metrics_team_instance_id", "team_instance_id"),
+        Index("ix_performance_metrics_timestamp", "timestamp"),
+        Index("ix_performance_metrics_period", "period"),
+        Index("ix_performance_metrics_composite", "team_instance_id", "period", "timestamp"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<PerformanceMetric(id={self.id}, team_id={self.team_instance_id}, "
+            f"period={self.period!r}, timestamp={self.timestamp})>"
         )
