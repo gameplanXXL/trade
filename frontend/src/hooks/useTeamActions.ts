@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from '@/hooks/useToast'
 import type { Team } from '@/types'
 
 interface ApiResponse {
@@ -70,7 +71,13 @@ export function usePauseTeam() {
 
       return { previousTeams, previousTeam }
     },
-    onError: (_err, teamId, context) => {
+    onSuccess: () => {
+      toast({
+        title: 'Team pausiert',
+        description: 'Das Team wurde erfolgreich pausiert.',
+      })
+    },
+    onError: (err, teamId, context) => {
       // Rollback on error
       if (context?.previousTeams) {
         queryClient.setQueryData(['teams'], context.previousTeams)
@@ -78,6 +85,11 @@ export function usePauseTeam() {
       if (context?.previousTeam) {
         queryClient.setQueryData(['team', teamId], context.previousTeam)
       }
+      toast({
+        title: 'Fehler beim Pausieren',
+        description: err.message || 'Team konnte nicht pausiert werden.',
+        variant: 'destructive',
+      })
     },
     onSettled: (_data, _error, teamId) => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
@@ -138,13 +150,24 @@ export function useResumeTeam() {
 
       return { previousTeams, previousTeam }
     },
-    onError: (_err, teamId, context) => {
+    onSuccess: () => {
+      toast({
+        title: 'Team fortgesetzt',
+        description: 'Das Team wurde erfolgreich fortgesetzt.',
+      })
+    },
+    onError: (err, teamId, context) => {
       if (context?.previousTeams) {
         queryClient.setQueryData(['teams'], context.previousTeams)
       }
       if (context?.previousTeam) {
         queryClient.setQueryData(['team', teamId], context.previousTeam)
       }
+      toast({
+        title: 'Fehler beim Fortsetzen',
+        description: err.message || 'Team konnte nicht fortgesetzt werden.',
+        variant: 'destructive',
+      })
     },
     onSettled: (_data, _error, teamId) => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
@@ -205,13 +228,24 @@ export function useStopTeam() {
 
       return { previousTeams, previousTeam }
     },
-    onError: (_err, teamId, context) => {
+    onSuccess: () => {
+      toast({
+        title: 'Team gestoppt',
+        description: 'Das Team wurde erfolgreich gestoppt.',
+      })
+    },
+    onError: (err, teamId, context) => {
       if (context?.previousTeams) {
         queryClient.setQueryData(['teams'], context.previousTeams)
       }
       if (context?.previousTeam) {
         queryClient.setQueryData(['team', teamId], context.previousTeam)
       }
+      toast({
+        title: 'Fehler beim Stoppen',
+        description: err.message || 'Team konnte nicht gestoppt werden.',
+        variant: 'destructive',
+      })
     },
     onSettled: (_data, _error, teamId) => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
@@ -245,11 +279,23 @@ export function useClosePositions() {
 
   return useMutation({
     mutationFn: closePositions,
-    onSuccess: (_data, teamId) => {
+    onSuccess: (data, teamId) => {
       // Invalidate team data to refetch updated positions
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['team', teamId] })
       queryClient.invalidateQueries({ queryKey: ['trades', teamId] })
+
+      toast({
+        title: 'Positionen geschlossen',
+        description: `${data.closed_count} ${data.closed_count === 1 ? 'Position wurde' : 'Positionen wurden'} erfolgreich geschlossen.`,
+      })
+    },
+    onError: (err) => {
+      toast({
+        title: 'Fehler beim Schließen',
+        description: err.message || 'Positionen konnten nicht geschlossen werden.',
+        variant: 'destructive',
+      })
     },
   })
 }

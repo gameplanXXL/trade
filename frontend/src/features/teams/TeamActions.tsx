@@ -6,15 +6,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { ConfirmationModal } from '@/components/ConfirmationModal'
 import { MoreVertical, Pause, Play, StopCircle, XCircle } from 'lucide-react'
 import type { Team } from '@/types'
 import {
@@ -158,68 +151,33 @@ export function TeamActions({ team, onComplete }: TeamActionsProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Confirmation Dialog: Close Positions */}
-      <Dialog
+      {/* Confirmation Modal: Close Positions */}
+      <ConfirmationModal
         open={confirmDialog === 'close_positions'}
-        onOpenChange={(open) => !open && setConfirmDialog(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Alle Positionen schließen?</DialogTitle>
-            <DialogDescription>
-              {openPositionsCount > 0 ? (
-                `${openPositionsCount} ${openPositionsCount === 1 ? 'Position' : 'Positionen'} mit ${formatCurrency(exposure)} Exposure werden geschlossen.`
-              ) : (
-                'Alle offenen Positionen dieses Teams werden geschlossen.'
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setConfirmDialog(null)}
-              disabled={isLoading}
-            >
-              Abbrechen
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleClosePositions}
-              disabled={isLoading}
-            >
-              {closePositions.isPending ? 'Schließe...' : 'Positionen schließen'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title="Alle Positionen schließen?"
+        description={
+          openPositionsCount > 0
+            ? `${openPositionsCount} ${openPositionsCount === 1 ? 'Position' : 'Positionen'} mit ${formatCurrency(exposure)} Exposure werden geschlossen.`
+            : 'Alle offenen Positionen dieses Teams werden geschlossen.'
+        }
+        confirmText="Positionen schließen"
+        variant="warning"
+        onConfirm={handleClosePositions}
+        onCancel={() => setConfirmDialog(null)}
+        isLoading={closePositions.isPending}
+      />
 
-      {/* Confirmation Dialog: Stop Team */}
-      <Dialog
+      {/* Confirmation Modal: Stop Team */}
+      <ConfirmationModal
         open={confirmDialog === 'stop'}
-        onOpenChange={(open) => !open && setConfirmDialog(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Team stoppen?</DialogTitle>
-            <DialogDescription>
-              Team "{team.name}" wird gestoppt. Alle offenen Positionen werden geschlossen und
-              das Team kann nicht mehr automatisch handeln.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setConfirmDialog(null)}
-              disabled={isLoading}
-            >
-              Abbrechen
-            </Button>
-            <Button variant="destructive" onClick={handleStop} disabled={isLoading}>
-              {stopTeam.isPending ? 'Stoppe...' : 'Team stoppen'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title="Team stoppen?"
+        description={`Team "${team.name}" wird gestoppt. Alle offenen Positionen werden geschlossen und das Team kann nicht mehr automatisch handeln.`}
+        confirmText="Team stoppen"
+        variant="destructive"
+        onConfirm={handleStop}
+        onCancel={() => setConfirmDialog(null)}
+        isLoading={stopTeam.isPending}
+      />
     </>
   )
 }

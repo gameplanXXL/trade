@@ -180,6 +180,61 @@ async def stop_team(team_id: int, repo: TeamRepoDep, db: DbDep) -> TeamInstance:
     return team
 
 
+@router.post("/{team_id}/positions/close", status_code=status.HTTP_200_OK)
+async def close_positions(team_id: int, repo: TeamRepoDep, db: DbDep) -> dict[str, Any]:
+    """Close all open positions for a team.
+
+    Does not stop the team - it continues running but with no open positions.
+    """
+    team = await repo.get_by_id(team_id)
+    if team is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "TEAM_NOT_FOUND", "message": f"Team with ID {team_id} not found"},
+        )
+
+    # Get all open trades for the team
+    trade_repo = TradeRepository(db)
+    open_trades = await trade_repo.get_open_trades(team_id)
+
+    if not open_trades:
+        log.info("no_open_positions_to_close", team_id=team_id)
+        return {
+            "data": {"closed_count": 0},
+            "meta": {"timestamp": datetime.now(UTC).isoformat()},
+        }
+
+    log.info(
+        "closing_all_positions",
+        team_id=team_id,
+        open_position_count=len(open_trades),
+    )
+
+    # Close each position
+    # TODO: Replace with actual MT5 position closing when MT5 integration is ready
+    # For now, we just mark them as closed in the database
+    for trade in open_trades:
+        trade.status = "closed"
+        trade.closed_at = datetime.now(UTC)
+        # Set exit_price to entry_price for now (will be replaced with actual market price)
+        if trade.exit_price is None:
+            trade.exit_price = trade.entry_price
+            trade.pnl = 0  # Zero P/L for manual closes
+
+    await db.commit()
+
+    log.info(
+        "positions_closed",
+        team_id=team_id,
+        closed_count=len(open_trades),
+    )
+
+    return {
+        "data": {"closed_count": len(open_trades)},
+        "meta": {"timestamp": datetime.now(UTC).isoformat()},
+    }
+
+
 @router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_team(team_id: int, repo: TeamRepoDep, db: DbDep) -> None:
     """Stop and delete a team instance permanently.
