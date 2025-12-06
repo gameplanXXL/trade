@@ -9,6 +9,16 @@ from pydantic import BaseModel, ConfigDict, Field
 from src.db.models import TeamInstanceMode, TeamInstanceStatus
 
 
+class TeamInstanceCreate(BaseModel):
+    """Internal schema for creating team instances in repository layer."""
+
+    name: str
+    template_name: str
+    symbols: list[str]
+    initial_budget: Decimal
+    mode: TeamInstanceMode = TeamInstanceMode.PAPER
+
+
 class TeamCreate(BaseModel):
     """Request schema for creating a new team instance."""
 

@@ -60,13 +60,15 @@ class TeamInstance(Base):
     template_name: Mapped[str] = mapped_column(String(100), nullable=False)
 
     # Status and mode (Story 005-01)
+    # Note: create_type=False because enum types are created in Alembic migrations
+    # Note: values_callable ensures enum values (not names) are used in SQL
     status: Mapped[TeamInstanceStatus] = mapped_column(
-        SQLEnum(TeamInstanceStatus),
+        SQLEnum(TeamInstanceStatus, create_type=False, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=TeamInstanceStatus.STOPPED,
     )
     mode: Mapped[TeamInstanceMode] = mapped_column(
-        SQLEnum(TeamInstanceMode),
+        SQLEnum(TeamInstanceMode, create_type=False, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=TeamInstanceMode.PAPER,
     )

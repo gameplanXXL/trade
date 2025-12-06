@@ -12,6 +12,7 @@ from src.api.deps import DbDep
 from src.api.schemas.team import (
     TeamCreate,
     TeamDetailResponse,
+    TeamInstanceCreate,
     TeamListResponse,
     TeamResponse,
 )
@@ -37,13 +38,15 @@ async def create_team(data: TeamCreate, repo: TeamRepoDep, db: DbDep) -> TeamIns
 
     Creates a team in STOPPED status, ready to be started.
     """
-    team = await repo.create(
+    # Convert API schema to repository schema
+    repo_data = TeamInstanceCreate(
         name=data.name,
         template_name=data.template_name,
         symbols=data.symbols,
         initial_budget=data.budget,
         mode=data.mode,
     )
+    team = await repo.create(repo_data)
     await db.commit()
     return team
 
@@ -179,9 +182,10 @@ async def stop_team(team_id: int, repo: TeamRepoDep, db: DbDep) -> TeamInstance:
 
 @router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_team(team_id: int, repo: TeamRepoDep, db: DbDep) -> None:
-    """Delete a team instance permanently.
+    """Stop and delete a team instance permanently.
 
-    Only stopped teams can be deleted.
+    Automatically stops the team if it's not already stopped, then deletes it.
+    This is a destructive operation that cannot be undone.
     """
     team = await repo.get_by_id(team_id)
     if team is None:
@@ -190,11 +194,10 @@ async def delete_team(team_id: int, repo: TeamRepoDep, db: DbDep) -> None:
             detail={"code": "TEAM_NOT_FOUND", "message": f"Team with ID {team_id} not found"},
         )
 
+    # Stop the team first if it's not already stopped
     if team.status != TeamInstanceStatus.STOPPED:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "TEAM_NOT_STOPPED", "message": "Stop the team before deleting"},
-        )
+        await repo.update_status(team_id, TeamInstanceStatus.STOPPED)
+        log.info("team_stopped_for_deletion", team_id=team_id, name=team.name)
 
     await repo.delete(team_id)
     await db.commit()

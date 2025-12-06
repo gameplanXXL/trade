@@ -6,8 +6,11 @@ import structlog
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from src.api.deps import CurrentUserDep, DbDep, SessionManagerDep
-from src.api.schemas.auth import LoginRequest, LoginResponse, LogoutResponse, MeResponse
+from src.api.schemas.auth import LoginRequest, LoginResponse, LogoutResponse, MeResponse, UserResponse
+from src.config.settings import get_settings
 from src.services.auth import AuthService
+
+settings = get_settings()
 
 log = structlog.get_logger()
 
@@ -57,17 +60,18 @@ async def login(
     await session_manager.create_session(session_token, user.id, ttl=SESSION_TTL)
 
     # Set httponly cookie
+    # secure=True only in production (HTTPS), false in development (HTTP)
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=session_token,
         httponly=True,
-        secure=True,  # HTTPS only in production
+        secure=settings.is_production,
         samesite="lax",
         max_age=SESSION_TTL,
     )
 
     log.info("user_logged_in", user_id=user.id, username=user.username)
-    return LoginResponse()
+    return LoginResponse(user=UserResponse.model_validate(user))
 
 
 @router.post("/logout", response_model=LogoutResponse, status_code=status.HTTP_200_OK)

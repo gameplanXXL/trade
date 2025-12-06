@@ -56,11 +56,24 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        const errorData: ApiError = await response.json()
-        throw new Error(errorData.error.message || 'Request failed')
+        const errorData = await response.json()
+        // Handle both FastAPI HTTPException format (detail) and custom error format (error)
+        const message =
+          errorData.error?.message ||
+          errorData.detail?.message ||
+          (typeof errorData.detail === 'string' ? errorData.detail : null) ||
+          'Request failed'
+        throw new Error(message)
       }
 
-      return await response.json()
+      const responseData = await response.json()
+
+      // If the response already has a 'data' property, return as-is
+      // Otherwise, wrap the response in a {data: ...} structure
+      if ('data' in responseData) {
+        return responseData
+      }
+      return { data: responseData }
     } catch (error) {
       if (error instanceof Error) {
         throw error

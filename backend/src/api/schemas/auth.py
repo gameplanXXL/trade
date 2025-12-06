@@ -25,6 +25,7 @@ class LoginResponse(BaseModel):
     """Response schema for successful login."""
 
     message: str = Field(default="Login successful")
+    user: UserResponse
 
 
 class LogoutResponse(BaseModel):

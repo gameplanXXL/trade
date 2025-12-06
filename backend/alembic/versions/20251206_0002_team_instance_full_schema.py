@@ -23,11 +23,17 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # Create enum types
+    # Create enum types (IF NOT EXISTS to handle partial migrations)
     op.execute(
-        "CREATE TYPE teaminstancestatus AS ENUM ('active', 'paused', 'stopped')"
+        "DO $$ BEGIN "
+        "CREATE TYPE teaminstancestatus AS ENUM ('active', 'paused', 'stopped'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END $$"
     )
-    op.execute("CREATE TYPE teaminstancemode AS ENUM ('paper', 'live')")
+    op.execute(
+        "DO $$ BEGIN "
+        "CREATE TYPE teaminstancemode AS ENUM ('paper', 'live'); "
+        "EXCEPTION WHEN duplicate_object THEN null; END $$"
+    )
 
     # Create team_instances table
     op.create_table(
@@ -37,13 +43,13 @@ def upgrade() -> None:
         sa.Column("template_name", sa.String(length=100), nullable=False),
         sa.Column(
             "status",
-            sa.Enum("active", "paused", "stopped", name="teaminstancestatus"),
+            postgresql.ENUM("active", "paused", "stopped", name="teaminstancestatus", create_type=False),
             nullable=False,
             server_default="stopped",
         ),
         sa.Column(
             "mode",
-            sa.Enum("paper", "live", name="teaminstancemode"),
+            postgresql.ENUM("paper", "live", name="teaminstancemode", create_type=False),
             nullable=False,
             server_default="paper",
         ),
@@ -166,16 +172,17 @@ def upgrade() -> None:
         "ix_agent_decisions_agent_name", "agent_decisions", ["agent_name"]
     )
 
-    # Convert trades and agent_decisions to TimescaleDB hypertables
-    # for optimized time-series queries
-    op.execute(
-        "SELECT create_hypertable('trades', 'opened_at', "
-        "migrate_data => true, if_not_exists => true)"
-    )
-    op.execute(
-        "SELECT create_hypertable('agent_decisions', 'created_at', "
-        "migrate_data => true, if_not_exists => true)"
-    )
+    # Note: TimescaleDB hypertable conversion requires composite primary keys
+    # including the time column. For now, using regular tables with indexes.
+    # To enable hypertables later, tables need (id, opened_at) composite PK.
+    # op.execute(
+    #     "SELECT create_hypertable('trades', 'opened_at', "
+    #     "migrate_data => true, if_not_exists => true)"
+    # )
+    # op.execute(
+    #     "SELECT create_hypertable('agent_decisions', 'created_at', "
+    #     "migrate_data => true, if_not_exists => true)"
+    # )
 
 
 def downgrade() -> None:

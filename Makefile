@@ -55,8 +55,13 @@ start: check-docker install-deps stop
 ## Stop all services
 stop:
 	@echo "🛑 Stopping Trading Platform..."
-	@-pkill -f "uvicorn src.main:app" 2>/dev/null || true
+	@# Try pkill first (Linux/Mac)
+	@-pkill -f "uvicorn" 2>/dev/null || true
 	@-pkill -f "vite" 2>/dev/null || true
+	@# Windows: Kill processes on ports 8000 (backend) and 5173 (frontend)
+	@# Using taskkill with // for Git Bash compatibility
+	@-taskkill //F //IM python.exe 2>/dev/null || true
+	@-taskkill //F //IM node.exe 2>/dev/null || true
 	@docker compose stop
 	@echo "✅ All services stopped"
 

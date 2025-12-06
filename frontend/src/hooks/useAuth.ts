@@ -41,16 +41,25 @@ export function useLogout() {
   })
 }
 
+// Response type for /api/auth/me endpoint
+interface MeResponse {
+  data: User
+}
+
 // Fetch current user (for initial auth check)
 export function useCurrentUser() {
+  const setUser = useAuthStore((state) => state.setUser)
   const clearAuth = useAuthStore((state) => state.clearAuth)
 
   return useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => {
       try {
-        const response = await apiClient.get<User>('/api/auth/me')
-        return response.data
+        const response = await apiClient.get<MeResponse>('/api/auth/me')
+        // response.data is {data: User}, so we need response.data.data
+        const user = response.data.data
+        setUser(user)
+        return user
       } catch (error) {
         // If unauthorized, clear auth state
         clearAuth()

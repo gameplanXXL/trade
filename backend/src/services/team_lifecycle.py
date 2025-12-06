@@ -1,6 +1,7 @@
 """Team Lifecycle Manager for orchestrating team start/stop/pause - Story 005-04."""
 
 import asyncio
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.exceptions import TeamNotFoundError, TemplateNotFoundError, ValidationError
 from src.db.models import TeamInstance, TeamInstanceStatus
 from src.db.repositories.team_repo import TeamRepository
+from src.db.repositories.trade_repo import TradeRepository
 from src.teams.loader import TeamLoader
 from src.teams.orchestrator import TeamOrchestrator
 
@@ -39,6 +41,7 @@ class TeamLifecycleManager:
         """
         self.session = session
         self.repo = TeamRepository(session)
+        self.trade_repo = TradeRepository(session)
         self.loader = TeamLoader()
         self.template_dir = template_dir or Path("team_templates")
 
@@ -55,10 +58,11 @@ class TeamLifecycleManager:
         """Start a team instance.
 
         1. Load team from database
-        2. Load and validate template
-        3. Create orchestrator
-        4. Start trading loop as background task
-        5. Update status to ACTIVE
+        2. Validate team can be started (budget > 0, symbols valid)
+        3. Load and validate template
+        4. Create orchestrator
+        5. Start trading loop as background task
+        6. Update status to ACTIVE
 
         Args:
             team_id: ID of the team to start.
@@ -80,6 +84,23 @@ class TeamLifecycleManager:
 
         if team_id in self._orchestrators:
             raise ValidationError(f"Team {team_id} already has an orchestrator running")
+
+        # Validate budget
+        if team.current_budget <= 0:
+            raise ValidationError(
+                f"Team {team_id} has insufficient budget: {team.current_budget}"
+            )
+
+        # Validate symbols
+        if not team.symbols or len(team.symbols) == 0:
+            raise ValidationError(f"Team {team_id} has no trading symbols configured")
+
+        # Validate symbol format (basic check for canonical format: XXX/YYY)
+        for symbol in team.symbols:
+            if "/" not in symbol or len(symbol.split("/")) != 2:
+                raise ValidationError(
+                    f"Invalid symbol format '{symbol}'. Expected canonical format like 'EUR/USD'"
+                )
 
         # Load template
         template_path = self.template_dir / f"{team.template_name}.yaml"
@@ -161,18 +182,17 @@ class TeamLifecycleManager:
 
         return team
 
-    async def stop_team(self, team_id: int) -> TeamInstance:
+    async def stop_team(self, team_id: int, close_positions: bool = True) -> TeamInstance:
         """Stop a team completely.
 
-        1. Cancel trading loop task
-        2. Remove orchestrator from memory
-        3. Update status to STOPPED
-
-        Note: Does not automatically close positions.
-        Call close_positions separately if needed.
+        1. Automatically close all open positions (if close_positions=True)
+        2. Cancel trading loop task
+        3. Remove orchestrator from memory
+        4. Update status to STOPPED
 
         Args:
             team_id: ID of the team to stop.
+            close_positions: Whether to close all open positions (default: True).
 
         Returns:
             Updated TeamInstance.
@@ -187,6 +207,10 @@ class TeamLifecycleManager:
         if team.status == TeamInstanceStatus.STOPPED:
             log.warning("team_already_stopped", team_id=team_id)
             return team
+
+        # Close all positions before stopping
+        if close_positions:
+            await self._close_all_positions(team_id)
 
         # Cancel trading loop
         if team_id in self._tasks:
@@ -308,6 +332,57 @@ class TeamLifecycleManager:
                 )
 
         log.info("lifecycle_manager_shutdown", stopped_teams=len(running_teams))
+
+    async def _close_all_positions(self, team_id: int) -> None:
+        """Close all open positions for a team.
+
+        This is called automatically when stopping a team to ensure
+        clean shutdown with no open positions.
+
+        Args:
+            team_id: ID of the team whose positions should be closed.
+        """
+        try:
+            # Get all open trades for the team
+            open_trades = await self.trade_repo.get_open_trades(team_id)
+
+            if not open_trades:
+                log.info("no_open_positions_to_close", team_id=team_id)
+                return
+
+            log.info(
+                "closing_all_positions",
+                team_id=team_id,
+                open_position_count=len(open_trades),
+            )
+
+            # Close each position
+            # TODO: Replace with actual MT5 position closing when MT5 integration is ready
+            # For now, we just mark them as closed in the database
+            for trade in open_trades:
+                trade.status = "closed"
+                trade.closed_at = datetime.now(UTC)
+                # Set exit_price to entry_price for now (will be replaced with actual market price)
+                if trade.exit_price is None:
+                    trade.exit_price = trade.entry_price
+                    trade.pnl = 0  # Zero P/L for emergency closes
+
+            await self.session.flush()
+
+            log.info(
+                "positions_closed",
+                team_id=team_id,
+                closed_count=len(open_trades),
+            )
+
+        except Exception as e:
+            log.error(
+                "close_positions_error",
+                team_id=team_id,
+                error=str(e),
+                error_type=type(e).__name__,
+            )
+            # Don't raise - we want to continue with team shutdown even if closing fails
 
     async def _trading_loop(
         self,

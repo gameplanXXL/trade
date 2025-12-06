@@ -6,6 +6,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api.schemas.team import TeamInstanceCreate
 from src.db.models import TeamInstance, TeamInstanceMode, TeamInstanceStatus
 
 log = structlog.get_logger()
@@ -26,33 +27,22 @@ class TeamRepository:
         """
         self.session = session
 
-    async def create(
-        self,
-        name: str,
-        template_name: str,
-        symbols: list[str],
-        initial_budget: Decimal,
-        mode: TeamInstanceMode = TeamInstanceMode.PAPER,
-    ) -> TeamInstance:
+    async def create(self, data: TeamInstanceCreate) -> TeamInstance:
         """Create a new team instance.
 
         Args:
-            name: Display name for the team instance.
-            template_name: Name of the YAML team template to use.
-            symbols: List of trading symbols (canonical format: EUR/USD).
-            initial_budget: Starting budget for the team.
-            mode: Trading mode (paper or live).
+            data: TeamInstanceCreate schema with all required fields.
 
         Returns:
             The newly created TeamInstance.
         """
         team = TeamInstance(
-            name=name,
-            template_name=template_name,
-            symbols=symbols,
-            initial_budget=initial_budget,
-            current_budget=initial_budget,
-            mode=mode,
+            name=data.name,
+            template_name=data.template_name,
+            symbols=data.symbols,
+            initial_budget=data.initial_budget,
+            current_budget=data.initial_budget,
+            mode=data.mode,
             status=TeamInstanceStatus.STOPPED,
         )
         self.session.add(team)
@@ -62,9 +52,9 @@ class TeamRepository:
         log.info(
             "team_created",
             team_id=team.id,
-            name=name,
-            template=template_name,
-            mode=mode.value,
+            name=data.name,
+            template=data.template_name,
+            mode=data.mode.value,
         )
         return team
 

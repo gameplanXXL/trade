@@ -73,35 +73,32 @@ def upgrade() -> None:
         unique=False,
     )
 
-    # Convert to TimescaleDB hypertable
-    op.execute(
-        "SELECT create_hypertable('performance_metrics', 'timestamp', "
-        "migrate_data => true, if_not_exists => true)"
-    )
+    # Note: TimescaleDB hypertable conversion requires composite primary keys
+    # including the time column. For now, using regular tables with indexes.
+    # To enable hypertables later, tables need (id, timestamp) composite PK.
+    # op.execute(
+    #     "SELECT create_hypertable('performance_metrics', 'timestamp', "
+    #     "migrate_data => true, if_not_exists => true)"
+    # )
 
-    # Add retention policies for different periods
-    # Hourly metrics: keep for 7 days
-    op.execute(
-        """
-        SELECT add_retention_policy('performance_metrics',
-            INTERVAL '7 days',
-            if_not_exists => true,
-            schedule_interval => INTERVAL '1 day'
-        )
-        WHERE period = 'hourly'
-        """
-    )
-
-    # Note: Daily metrics (1 year) and weekly metrics (unlimited) are handled
-    # by not having retention policies for those periods.
-    # TimescaleDB will only drop chunks that match the retention policy conditions.
+    # Retention policies disabled until hypertable is enabled
+    # op.execute(
+    #     """
+    #     SELECT add_retention_policy('performance_metrics',
+    #         INTERVAL '7 days',
+    #         if_not_exists => true,
+    #         schedule_interval => INTERVAL '1 day'
+    #     )
+    #     WHERE period = 'hourly'
+    #     """
+    # )
 
 
 def downgrade() -> None:
-    # Remove retention policy
-    op.execute(
-        "SELECT remove_retention_policy('performance_metrics', if_exists => true)"
-    )
+    # Remove retention policy (disabled - no hypertable)
+    # op.execute(
+    #     "SELECT remove_retention_policy('performance_metrics', if_exists => true)"
+    # )
 
     # Drop indexes
     op.drop_index("ix_performance_metrics_composite", table_name="performance_metrics")
