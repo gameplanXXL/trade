@@ -2,7 +2,7 @@
 epic: 005
 story: 03
 title: "Teams REST-API Endpoints"
-status: backlog
+status: completed
 story_points: 3
 covers: [FR6, FR7, FR8, FR9]
 ---
