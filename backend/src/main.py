@@ -3,12 +3,14 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import socketio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.deps import RedisDep
 from src.api.exception_handlers import trading_error_handler, unhandled_exception_handler
 from src.api.routes import analytics_router, teams_router
+from src.api.websocket import sio
 from src.config.settings import get_settings
 from src.core.exceptions import TradingError
 from src.core.logging import get_logger, setup_logging
@@ -77,3 +79,7 @@ async def health_check(redis: RedisDep) -> dict[str, str | dict[str, str]]:
             "redis": redis_status,
         },
     }
+
+
+# Wrap FastAPI app with Socket.io ASGI app
+socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path="/ws/socket.io")
