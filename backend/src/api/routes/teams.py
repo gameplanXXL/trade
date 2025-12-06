@@ -6,7 +6,6 @@ from typing import Annotated, Any
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import DbDep
 from src.api.schemas.team import (
@@ -18,6 +17,7 @@ from src.api.schemas.team import (
 )
 from src.db.models import TeamInstance, TeamInstanceStatus, Trade
 from src.db.repositories.team_repo import TeamRepository
+from src.db.repositories.trade_repo import TradeRepository
 
 log = structlog.get_logger()
 

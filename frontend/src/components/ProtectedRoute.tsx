@@ -14,6 +14,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Set up global auth listener for 401 events
   useAuthListener()
 
+  // If already authenticated via store (e.g., after login), skip loading
+  if (isAuthenticated) {
+    return <>{children}</>
+  }
+
   // Show loading spinner while checking auth status (but not if there was an error)
   if (isLoading && !isError) {
     return (
@@ -23,11 +28,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  // Redirect to login if not authenticated or if auth check failed
-  if (!isAuthenticated || isError) {
-    return <Navigate to="/login" replace />
-  }
-
-  // Render children if authenticated
-  return <>{children}</>
+  // Redirect to login if not authenticated
+  return <Navigate to="/login" replace />
 }

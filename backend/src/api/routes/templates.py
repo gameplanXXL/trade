@@ -10,7 +10,6 @@ from src.api.schemas.template import TemplateListResponse, TemplateResponse
 from src.config.settings import get_settings
 from src.core.exceptions import ConfigurationError, ValidationError
 from src.teams.loader import TeamLoader
-from src.teams.schemas import TeamTemplate
 
 log = structlog.get_logger()
 

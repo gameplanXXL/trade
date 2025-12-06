@@ -6,7 +6,13 @@ import structlog
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from src.api.deps import CurrentUserDep, DbDep, SessionManagerDep
-from src.api.schemas.auth import LoginRequest, LoginResponse, LogoutResponse, MeResponse, UserResponse
+from src.api.schemas.auth import (
+    LoginRequest,
+    LoginResponse,
+    LogoutResponse,
+    MeResponse,
+    UserResponse,
+)
 from src.config.settings import get_settings
 from src.services.auth import AuthService
 

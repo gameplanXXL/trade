@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { createChart, LineSeries, type IChartApi, type ISeriesApi, type LineData } from 'lightweight-charts'
+import { createChart, LineSeries, type IChartApi, type ISeriesApi, type LineData, type UTCTimestamp } from 'lightweight-charts'
 import { usePerformanceHistory, type Timeframe } from '@/hooks/usePerformanceHistory'
 import { DrawdownChart } from './DrawdownChart'
 
@@ -20,7 +20,7 @@ export function PerformanceCharts({ teamId }: PerformanceChartsProps) {
 
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
-  const seriesRef = useRef<ISeriesApi<any> | null>(null)
+  const seriesRef = useRef<ISeriesApi<'Line'> | null>(null)
 
   // Initialize chart
   useEffect(() => {
@@ -100,7 +100,7 @@ export function PerformanceCharts({ teamId }: PerformanceChartsProps) {
     if (!seriesRef.current || history.length === 0) return
 
     const chartData: LineData[] = history.map(point => ({
-      time: point.timestamp as any,
+      time: point.timestamp as UTCTimestamp,
       value: point.pnl,
     }))
 

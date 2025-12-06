@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { createChart, AreaSeries, type IChartApi, type ISeriesApi, type AreaData } from 'lightweight-charts'
+import { createChart, AreaSeries, type IChartApi, type ISeriesApi, type AreaData, type UTCTimestamp } from 'lightweight-charts'
 import type { PerformanceDataPoint } from '@/hooks/usePerformanceHistory'
 
 interface DrawdownChartProps {
@@ -9,7 +9,7 @@ interface DrawdownChartProps {
 export function DrawdownChart({ data }: DrawdownChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
-  const seriesRef = useRef<ISeriesApi<any> | null>(null)
+  const seriesRef = useRef<ISeriesApi<'Area'> | null>(null)
 
   useEffect(() => {
     if (!chartContainerRef.current) return
@@ -78,7 +78,7 @@ export function DrawdownChart({ data }: DrawdownChartProps) {
     // Convert data to chart format
     // Drawdown is negative, so we invert it for display
     const chartData: AreaData[] = data.map(point => ({
-      time: point.timestamp as any,
+      time: point.timestamp as UTCTimestamp,
       value: -point.drawdown, // Invert to show as negative area
     }))
 

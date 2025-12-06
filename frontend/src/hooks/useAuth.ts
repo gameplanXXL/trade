@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '@/lib/api'
@@ -9,6 +9,7 @@ import type { LoginInput, LoginResponse, User } from '@/types'
 export function useLogin() {
   const setUser = useAuthStore((state) => state.setUser)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (credentials: LoginInput) => {
@@ -20,6 +21,8 @@ export function useLogin() {
     },
     onSuccess: (data) => {
       setUser(data.user)
+      // Clear any cached error state from previous auth check
+      queryClient.removeQueries({ queryKey: ['currentUser'] })
       navigate('/dashboard')
     },
   })
@@ -53,7 +56,7 @@ export function useCurrentUser() {
 
   return useQuery({
     queryKey: ['currentUser'],
-    queryFn: async () => {
+    queryFn: async (): Promise<User | null> => {
       try {
         const response = await apiClient.get<MeResponse>('/api/auth/me')
         // response.data is {data: User}, so we need response.data.data

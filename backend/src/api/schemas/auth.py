@@ -21,6 +21,16 @@ class LoginRequest(BaseModel):
     )
 
 
+class UserResponse(BaseModel):
+    """Response schema for current user info."""
+
+    id: int
+    username: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class LoginResponse(BaseModel):
     """Response schema for successful login."""
 
@@ -32,16 +42,6 @@ class LogoutResponse(BaseModel):
     """Response schema for logout."""
 
     message: str = Field(default="Logout successful")
-
-
-class UserResponse(BaseModel):
-    """Response schema for current user info."""
-
-    id: int
-    username: str
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class MeResponse(BaseModel):

@@ -2,12 +2,10 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.functional_serializers import PlainSerializer
-from typing_extensions import Annotated
-
 
 # Custom serializer for Decimal to string
 DecimalAsStr = Annotated[Decimal, PlainSerializer(lambda x: str(x), return_type=str)]

@@ -35,15 +35,18 @@ function getTimeframeParams(timeframe: Timeframe): { period: string; since?: str
   const now = new Date()
   
   switch (timeframe) {
-    case '1D':
+    case '1D': {
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
       return { period: 'hourly', since: oneDayAgo.toISOString() }
-    case '1W':
+    }
+    case '1W': {
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
       return { period: 'hourly', since: oneWeekAgo.toISOString() }
-    case '1M':
+    }
+    case '1M': {
       const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
       return { period: 'daily', since: oneMonthAgo.toISOString() }
+    }
     case 'All':
     default:
       return { period: 'daily' }

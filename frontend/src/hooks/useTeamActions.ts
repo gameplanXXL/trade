@@ -16,6 +16,14 @@ interface ErrorResponse {
   }
 }
 
+interface TeamsQueryData {
+  data: Team[]
+}
+
+interface TeamQueryData {
+  data: Team
+}
+
 /**
  * Pause a team
  */
@@ -51,7 +59,7 @@ export function usePauseTeam() {
       const previousTeam = queryClient.getQueryData(['team', teamId])
 
       // Optimistically update to the new value
-      queryClient.setQueryData(['teams'], (old: any) => {
+      queryClient.setQueryData(['teams'], (old: TeamsQueryData | undefined) => {
         if (!old?.data) return old
         return {
           ...old,
@@ -61,7 +69,7 @@ export function usePauseTeam() {
         }
       })
 
-      queryClient.setQueryData(['team', teamId], (old: any) => {
+      queryClient.setQueryData(['team', teamId], (old: TeamQueryData | undefined) => {
         if (!old?.data) return old
         return {
           ...old,
@@ -130,7 +138,7 @@ export function useResumeTeam() {
       const previousTeams = queryClient.getQueryData(['teams'])
       const previousTeam = queryClient.getQueryData(['team', teamId])
 
-      queryClient.setQueryData(['teams'], (old: any) => {
+      queryClient.setQueryData(['teams'], (old: TeamsQueryData | undefined) => {
         if (!old?.data) return old
         return {
           ...old,
@@ -140,7 +148,7 @@ export function useResumeTeam() {
         }
       })
 
-      queryClient.setQueryData(['team', teamId], (old: any) => {
+      queryClient.setQueryData(['team', teamId], (old: TeamQueryData | undefined) => {
         if (!old?.data) return old
         return {
           ...old,
@@ -208,7 +216,7 @@ export function useStopTeam() {
       const previousTeams = queryClient.getQueryData(['teams'])
       const previousTeam = queryClient.getQueryData(['team', teamId])
 
-      queryClient.setQueryData(['teams'], (old: any) => {
+      queryClient.setQueryData(['teams'], (old: TeamsQueryData | undefined) => {
         if (!old?.data) return old
         return {
           ...old,
@@ -218,7 +226,7 @@ export function useStopTeam() {
         }
       })
 
-      queryClient.setQueryData(['team', teamId], (old: any) => {
+      queryClient.setQueryData(['team', teamId], (old: TeamQueryData | undefined) => {
         if (!old?.data) return old
         return {
           ...old,

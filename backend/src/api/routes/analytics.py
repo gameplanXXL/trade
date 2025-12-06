@@ -1,7 +1,6 @@
 """Analytics REST API endpoints - Story 006-04."""
 
 from datetime import datetime
-from decimal import Decimal
 from typing import Annotated
 
 import structlog
@@ -147,7 +146,9 @@ async def get_agent_activity(
     service: AnalyticsServiceDep,
     agent: str | None = Query(default=None, description="Filter by agent name"),
     type: str | None = Query(default=None, description="Filter by decision type"),
-    since: datetime | None = Query(default=None, description="Filter decisions after this timestamp (ISO 8601)"),
+    since: datetime | None = Query(
+        default=None, description="Filter decisions after this timestamp (ISO 8601)"
+    ),
     limit: int = Query(default=100, ge=1, le=1000, description="Maximum number of records"),
 ) -> list[AgentDecisionResponse]:
     """Get agent decision history for a team instance.

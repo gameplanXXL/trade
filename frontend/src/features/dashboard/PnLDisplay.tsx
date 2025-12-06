@@ -1,8 +1,8 @@
 import { TrendingUp, TrendingDown } from 'lucide-react'
 
 interface PnLDisplayProps {
-  value: number
-  percent: number
+  value?: number
+  percent?: number
 }
 
 /**
@@ -15,9 +15,11 @@ interface PnLDisplayProps {
  *
  * Uses JetBrains Mono for numbers as per UX Design spec
  */
-export function PnLDisplay({ value, percent }: PnLDisplayProps) {
-  const isProfitable = percent > 0
-  const isCritical = percent <= -5
+export function PnLDisplay({ value = 0, percent = 0 }: PnLDisplayProps) {
+  const safeValue = value ?? 0
+  const safePercent = percent ?? 0
+  const isProfitable = safePercent > 0
+  const isCritical = safePercent <= -5
 
   // Color coding based on performance
   let colorClass = 'text-success'
@@ -43,12 +45,12 @@ export function PnLDisplay({ value, percent }: PnLDisplayProps) {
       {/* Large P/L percentage in JetBrains Mono */}
       <div className={`mt-2 font-mono text-3xl font-bold ${colorClass}`}>
         {isProfitable ? '+' : ''}
-        {percent.toFixed(2)}%
+        {safePercent.toFixed(2)}%
       </div>
 
       {/* Absolute value */}
       <div className={`font-mono text-sm ${isProfitable ? 'text-success-muted' : isCritical ? 'text-critical-muted' : 'text-warning-muted'}`}>
-        {isProfitable ? '+' : ''}${value.toFixed(2)}
+        {isProfitable ? '+' : ''}${safeValue.toFixed(2)}
       </div>
     </div>
   )

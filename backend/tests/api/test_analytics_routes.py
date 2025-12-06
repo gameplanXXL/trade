@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import status
@@ -158,30 +158,36 @@ class TestGetPerformanceHistory:
         mock_performance_metrics: list[PerformanceMetricResponse],
     ) -> None:
         """Test successfully getting performance history."""
+        from src.api.routes.analytics import get_analytics_service
+
         mock_analytics_service.get_performance_history.return_value = (
             mock_performance_metrics
         )
 
-        with patch(
-            "src.api.routes.analytics.get_analytics_service",
-            return_value=mock_analytics_service,
-        ):
+        async def mock_get_analytics_service():
+            return mock_analytics_service
+
+        app.dependency_overrides[get_analytics_service] = mock_get_analytics_service
+
+        try:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
                 response = await client.get("/api/analytics/teams/1/history")
 
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert isinstance(data, list)
-        assert len(data) == 3
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert isinstance(data, list)
+            assert len(data) == 3
 
-        mock_analytics_service.get_performance_history.assert_called_once_with(
-            team_id=1,
-            period="daily",
-            start_time=None,
-            limit=100,
-        )
+            mock_analytics_service.get_performance_history.assert_called_once_with(
+                team_id=1,
+                period="daily",
+                start_time=None,
+                limit=100,
+            )
+        finally:
+            app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
     async def test_get_performance_history_with_filters(
@@ -190,14 +196,18 @@ class TestGetPerformanceHistory:
         mock_performance_metrics: list[PerformanceMetricResponse],
     ) -> None:
         """Test getting performance history with query parameters."""
+        from src.api.routes.analytics import get_analytics_service
+
         mock_analytics_service.get_performance_history.return_value = (
             mock_performance_metrics
         )
 
-        with patch(
-            "src.api.routes.analytics.get_analytics_service",
-            return_value=mock_analytics_service,
-        ):
+        async def mock_get_analytics_service():
+            return mock_analytics_service
+
+        app.dependency_overrides[get_analytics_service] = mock_get_analytics_service
+
+        try:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
@@ -210,14 +220,16 @@ class TestGetPerformanceHistory:
                     },
                 )
 
-        assert response.status_code == status.HTTP_200_OK
+            assert response.status_code == status.HTTP_200_OK
 
-        # Verify call arguments
-        call_kwargs = mock_analytics_service.get_performance_history.call_args.kwargs
-        assert call_kwargs["team_id"] == 1
-        assert call_kwargs["period"] == "hourly"
-        assert call_kwargs["limit"] == 50
-        assert isinstance(call_kwargs["start_time"], datetime)
+            # Verify call arguments
+            call_kwargs = mock_analytics_service.get_performance_history.call_args.kwargs
+            assert call_kwargs["team_id"] == 1
+            assert call_kwargs["period"] == "hourly"
+            assert call_kwargs["limit"] == 50
+            assert isinstance(call_kwargs["start_time"], datetime)
+        finally:
+            app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
     async def test_get_performance_history_empty(
@@ -225,20 +237,26 @@ class TestGetPerformanceHistory:
         mock_analytics_service: AsyncMock,
     ) -> None:
         """Test getting performance history with no records."""
+        from src.api.routes.analytics import get_analytics_service
+
         mock_analytics_service.get_performance_history.return_value = []
 
-        with patch(
-            "src.api.routes.analytics.get_analytics_service",
-            return_value=mock_analytics_service,
-        ):
+        async def mock_get_analytics_service():
+            return mock_analytics_service
+
+        app.dependency_overrides[get_analytics_service] = mock_get_analytics_service
+
+        try:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
                 response = await client.get("/api/analytics/teams/1/history")
 
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert data == []
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data == []
+        finally:
+            app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
     async def test_get_performance_history_team_not_found(
@@ -246,22 +264,28 @@ class TestGetPerformanceHistory:
         mock_analytics_service: AsyncMock,
     ) -> None:
         """Test getting performance history for non-existent team."""
+        from src.api.routes.analytics import get_analytics_service
+
         mock_analytics_service.get_performance_history.side_effect = TeamNotFoundError(
             "Team instance with ID 999 not found"
         )
 
-        with patch(
-            "src.api.routes.analytics.get_analytics_service",
-            return_value=mock_analytics_service,
-        ):
+        async def mock_get_analytics_service():
+            return mock_analytics_service
+
+        app.dependency_overrides[get_analytics_service] = mock_get_analytics_service
+
+        try:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
                 response = await client.get("/api/analytics/teams/999/history")
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        data = response.json()
-        assert data["detail"]["code"] == "TEAM_NOT_FOUND"
+            assert response.status_code == status.HTTP_404_NOT_FOUND
+            data = response.json()
+            assert data["detail"]["code"] == "TEAM_NOT_FOUND"
+        finally:
+            app.dependency_overrides.clear()
 
 
 class TestGetPnlBySymbol:
@@ -273,28 +297,34 @@ class TestGetPnlBySymbol:
         mock_analytics_service: AsyncMock,
     ) -> None:
         """Test successfully getting P/L by symbol."""
+        from src.api.routes.analytics import get_analytics_service
+
         mock_pnl_data = {
             "EUR/USD": Decimal("300.00"),
             "GBP/USD": Decimal("200.00"),
         }
         mock_analytics_service.calculate_pnl_by_symbol.return_value = mock_pnl_data
 
-        with patch(
-            "src.api.routes.analytics.get_analytics_service",
-            return_value=mock_analytics_service,
-        ):
+        async def mock_get_analytics_service():
+            return mock_analytics_service
+
+        app.dependency_overrides[get_analytics_service] = mock_get_analytics_service
+
+        try:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
                 response = await client.get("/api/analytics/teams/1/pnl-by-symbol")
 
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert data["EUR/USD"] == "300.00"
-        assert data["GBP/USD"] == "200.00"
-        assert len(data) == 2
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data["EUR/USD"] == "300.00"
+            assert data["GBP/USD"] == "200.00"
+            assert len(data) == 2
 
-        mock_analytics_service.calculate_pnl_by_symbol.assert_called_once_with(1)
+            mock_analytics_service.calculate_pnl_by_symbol.assert_called_once_with(1)
+        finally:
+            app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
     async def test_get_pnl_by_symbol_empty(
@@ -302,20 +332,26 @@ class TestGetPnlBySymbol:
         mock_analytics_service: AsyncMock,
     ) -> None:
         """Test getting P/L by symbol with no trades."""
+        from src.api.routes.analytics import get_analytics_service
+
         mock_analytics_service.calculate_pnl_by_symbol.return_value = {}
 
-        with patch(
-            "src.api.routes.analytics.get_analytics_service",
-            return_value=mock_analytics_service,
-        ):
+        async def mock_get_analytics_service():
+            return mock_analytics_service
+
+        app.dependency_overrides[get_analytics_service] = mock_get_analytics_service
+
+        try:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
                 response = await client.get("/api/analytics/teams/1/pnl-by-symbol")
 
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert data == {}
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data == {}
+        finally:
+            app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
     async def test_get_pnl_by_symbol_team_not_found(
@@ -323,22 +359,28 @@ class TestGetPnlBySymbol:
         mock_analytics_service: AsyncMock,
     ) -> None:
         """Test getting P/L by symbol for non-existent team."""
+        from src.api.routes.analytics import get_analytics_service
+
         mock_analytics_service.calculate_pnl_by_symbol.side_effect = TeamNotFoundError(
             "Team instance with ID 999 not found"
         )
 
-        with patch(
-            "src.api.routes.analytics.get_analytics_service",
-            return_value=mock_analytics_service,
-        ):
+        async def mock_get_analytics_service():
+            return mock_analytics_service
+
+        app.dependency_overrides[get_analytics_service] = mock_get_analytics_service
+
+        try:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
                 response = await client.get("/api/analytics/teams/999/pnl-by-symbol")
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        data = response.json()
-        assert data["detail"]["code"] == "TEAM_NOT_FOUND"
+            assert response.status_code == status.HTTP_404_NOT_FOUND
+            data = response.json()
+            assert data["detail"]["code"] == "TEAM_NOT_FOUND"
+        finally:
+            app.dependency_overrides.clear()
 
 
 class TestGetAgentActivity:
@@ -351,28 +393,34 @@ class TestGetAgentActivity:
         mock_agent_decisions: list[AgentDecisionResponse],
     ) -> None:
         """Test successfully getting agent activity."""
+        from src.api.routes.analytics import get_analytics_service
+
         mock_analytics_service.get_agent_activity.return_value = mock_agent_decisions
 
-        with patch(
-            "src.api.routes.analytics.get_analytics_service",
-            return_value=mock_analytics_service,
-        ):
+        async def mock_get_analytics_service():
+            return mock_analytics_service
+
+        app.dependency_overrides[get_analytics_service] = mock_get_analytics_service
+
+        try:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
                 response = await client.get("/api/analytics/teams/1/activity")
 
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert isinstance(data, list)
-        assert len(data) == 3
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert isinstance(data, list)
+            assert len(data) == 3
 
-        mock_analytics_service.get_agent_activity.assert_called_once_with(
-            team_id=1,
-            agent_name=None,
-            decision_type=None,
-            since=None,
-        )
+            mock_analytics_service.get_agent_activity.assert_called_once_with(
+                team_id=1,
+                agent_name=None,
+                decision_type=None,
+                since=None,
+            )
+        finally:
+            app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
     async def test_get_agent_activity_with_filters(
@@ -381,13 +429,17 @@ class TestGetAgentActivity:
         mock_agent_decisions: list[AgentDecisionResponse],
     ) -> None:
         """Test getting agent activity with query parameters."""
+        from src.api.routes.analytics import get_analytics_service
+
         filtered_decisions = [mock_agent_decisions[0]]
         mock_analytics_service.get_agent_activity.return_value = filtered_decisions
 
-        with patch(
-            "src.api.routes.analytics.get_analytics_service",
-            return_value=mock_analytics_service,
-        ):
+        async def mock_get_analytics_service():
+            return mock_analytics_service
+
+        app.dependency_overrides[get_analytics_service] = mock_get_analytics_service
+
+        try:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
@@ -400,15 +452,17 @@ class TestGetAgentActivity:
                     },
                 )
 
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert len(data) == 1
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert len(data) == 1
 
-        call_kwargs = mock_analytics_service.get_agent_activity.call_args.kwargs
-        assert call_kwargs["team_id"] == 1
-        assert call_kwargs["agent_name"] == "MarketAnalyzer"
-        assert call_kwargs["decision_type"] == "SIGNAL"
-        assert call_kwargs["since"] is None
+            call_kwargs = mock_analytics_service.get_agent_activity.call_args.kwargs
+            assert call_kwargs["team_id"] == 1
+            assert call_kwargs["agent_name"] == "MarketAnalyzer"
+            assert call_kwargs["decision_type"] == "SIGNAL"
+            assert call_kwargs["since"] is None
+        finally:
+            app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
     async def test_get_agent_activity_limit_applied(
@@ -416,14 +470,18 @@ class TestGetAgentActivity:
         mock_analytics_service: AsyncMock,
     ) -> None:
         """Test that limit parameter is correctly applied."""
+        from src.api.routes.analytics import get_analytics_service
+
         # Create 150 mock decisions
         many_decisions = [MagicMock(spec=AgentDecisionResponse) for _ in range(150)]
         mock_analytics_service.get_agent_activity.return_value = many_decisions
 
-        with patch(
-            "src.api.routes.analytics.get_analytics_service",
-            return_value=mock_analytics_service,
-        ):
+        async def mock_get_analytics_service():
+            return mock_analytics_service
+
+        app.dependency_overrides[get_analytics_service] = mock_get_analytics_service
+
+        try:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
@@ -432,10 +490,12 @@ class TestGetAgentActivity:
                     params={"limit": 100},
                 )
 
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        # Limit should be applied to returned data
-        assert len(data) == 100
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            # Limit should be applied to returned data
+            assert len(data) == 100
+        finally:
+            app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
     async def test_get_agent_activity_empty(
@@ -443,20 +503,26 @@ class TestGetAgentActivity:
         mock_analytics_service: AsyncMock,
     ) -> None:
         """Test getting agent activity with no decisions."""
+        from src.api.routes.analytics import get_analytics_service
+
         mock_analytics_service.get_agent_activity.return_value = []
 
-        with patch(
-            "src.api.routes.analytics.get_analytics_service",
-            return_value=mock_analytics_service,
-        ):
+        async def mock_get_analytics_service():
+            return mock_analytics_service
+
+        app.dependency_overrides[get_analytics_service] = mock_get_analytics_service
+
+        try:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
                 response = await client.get("/api/analytics/teams/1/activity")
 
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert data == []
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data == []
+        finally:
+            app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
     async def test_get_agent_activity_team_not_found(
@@ -464,22 +530,28 @@ class TestGetAgentActivity:
         mock_analytics_service: AsyncMock,
     ) -> None:
         """Test getting agent activity for non-existent team."""
+        from src.api.routes.analytics import get_analytics_service
+
         mock_analytics_service.get_agent_activity.side_effect = TeamNotFoundError(
             "Team instance with ID 999 not found"
         )
 
-        with patch(
-            "src.api.routes.analytics.get_analytics_service",
-            return_value=mock_analytics_service,
-        ):
+        async def mock_get_analytics_service():
+            return mock_analytics_service
+
+        app.dependency_overrides[get_analytics_service] = mock_get_analytics_service
+
+        try:
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
                 response = await client.get("/api/analytics/teams/999/activity")
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        data = response.json()
-        assert data["detail"]["code"] == "TEAM_NOT_FOUND"
+            assert response.status_code == status.HTTP_404_NOT_FOUND
+            data = response.json()
+            assert data["detail"]["code"] == "TEAM_NOT_FOUND"
+        finally:
+            app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
     async def test_get_agent_activity_invalid_limit(

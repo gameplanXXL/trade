@@ -164,7 +164,10 @@ class LLMSignalAnalyst(BaseAgent):
                 data={
                     "action": SignalAction.HOLD.value,
                     "confidence": 0.0,
-                    "reasoning": f"LLM API failed after {self.max_retries} retries. Defaulting to HOLD for safety.",
+                    "reasoning": (
+                        f"LLM API failed after {self.max_retries} retries. "
+                        "Defaulting to HOLD for safety."
+                    ),
                     "error": str(e),
                     "fallback": True,
                 },

@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.schemas.team import TeamInstanceCreate
-from src.db.models import TeamInstance, TeamInstanceMode, TeamInstanceStatus
+from src.db.models import TeamInstance, TeamInstanceStatus
 
 log = structlog.get_logger()
 
