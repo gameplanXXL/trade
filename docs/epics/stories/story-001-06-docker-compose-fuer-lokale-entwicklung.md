@@ -2,7 +2,7 @@
 epic: 001
 story: 06
 title: "Docker Compose für lokale Entwicklung"
-status: backlog
+status: done
 story_points: 2
 ---
 
@@ -58,3 +58,21 @@ services:
 
 **Prerequisites:** Story 1.1, 1.3, 1.4, 1.5
 
+---
+
+## Implementation Notes (2025-12-06)
+
+**Story vollständig umgesetzt:**
+
+- ✅ `docker-compose.yml` mit allen Services:
+  - `backend` auf Port 8000 mit Health-Check
+  - `frontend` auf Port 3000
+  - `postgres` (timescale/timescaledb:latest-pg16) auf Port 5432
+  - `redis` (redis:7-alpine) auf Port 6379
+- ✅ `docker-compose.dev.yml` für Hot-Reload:
+  - Backend mit Volume Mount und `--reload`
+  - Frontend mit Volume Mount und HMR auf Port 5173
+- ✅ Health-Checks für alle Services definiert
+- ✅ Named Volumes: `postgres_data`, `redis_data`
+- ✅ Network: `trade-network` (bridge)
+- ✅ Service-Dependencies mit `condition: service_healthy`

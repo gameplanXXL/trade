@@ -2,7 +2,7 @@
 epic: 001
 story: 07
 title: "Pydantic Settings und Environment Management"
-status: backlog
+status: done
 story_points: 2
 ---
 
@@ -56,3 +56,24 @@ class Settings(BaseSettings):
 
 **Prerequisites:** Story 1.1
 
+---
+
+## Implementation Notes (2025-12-06)
+
+**Story vollständig umgesetzt:**
+
+- ✅ `src/config/settings.py` mit Pydantic Settings:
+  - `database_url` (required)
+  - `redis_url` (default: redis://localhost:6379/0)
+  - `api_host`, `api_port` (defaults: 0.0.0.0:8000)
+  - `secret_key` (required, min 32 chars)
+  - `encryption_key` (optional, Fernet-Format validiert)
+  - `anthropic_api_key`, `openai_api_key` (optional)
+  - `mt5_login`, `mt5_password`, `mt5_server` (optional)
+  - `log_level`, `log_format`
+  - `pipeline_timeout_seconds`, `db_pool_size`, `db_max_overflow`
+- ✅ `get_settings()` mit LRU-Cache für Dependency Injection
+- ✅ Validators für `secret_key` (min 32 chars) und `encryption_key` (Fernet-Format)
+- ✅ Properties: `is_production`, `is_development`
+- ✅ `.env.example` dokumentiert alle Variablen mit Generierungs-Befehlen
+- ✅ Environment-Literal für `environment` (development/staging/production)
