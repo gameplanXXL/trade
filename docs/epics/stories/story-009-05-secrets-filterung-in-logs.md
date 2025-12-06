@@ -2,7 +2,7 @@
 epic: 009
 story: 05
 title: "Secrets-Filterung in Logs"
-status: backlog
+status: done
 story_points: 2
 covers: [FR51]
 ---

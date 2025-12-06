@@ -10,6 +10,7 @@ import structlog
 # Sensitive field names that should be filtered from logs
 SENSITIVE_FIELDS = frozenset({
     "password",
+    "passwd",
     "api_key",
     "apikey",
     "secret",
@@ -21,7 +22,7 @@ SENSITIVE_FIELDS = frozenset({
 
 # Pattern to match sensitive values in strings
 SENSITIVE_PATTERN = re.compile(
-    r'(password|api_key|apikey|secret|token|authorization|credential|private_key)'
+    r'(password|passwd|api_key|apikey|secret|token|authorization|credential|private_key)'
     r'\s*[=:]\s*["\']?([^"\'\s,}]+)["\']?',
     re.IGNORECASE,
 )
