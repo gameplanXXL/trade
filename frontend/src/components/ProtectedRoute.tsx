@@ -9,13 +9,13 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  const { isLoading } = useCurrentUser()
+  const { isLoading, isError } = useCurrentUser()
 
   // Set up global auth listener for 401 events
   useAuthListener()
 
-  // Show loading spinner while checking auth status
-  if (isLoading) {
+  // Show loading spinner while checking auth status (but not if there was an error)
+  if (isLoading && !isError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
@@ -23,8 +23,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
+  // Redirect to login if not authenticated or if auth check failed
+  if (!isAuthenticated || isError) {
     return <Navigate to="/login" replace />
   }
 
