@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom'
 import { DashboardView } from '@/features/dashboard'
 import { TeamDetail } from '@/features/teams'
+import { TeamCreate } from '@/features/teams/TeamCreate'
 
 function TeamDetailWrapper() {
   const { teamId } = useParams<{ teamId: string }>()
@@ -12,6 +13,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<DashboardView />} />
+        <Route path="/dashboard" element={<DashboardView />} />
+        <Route path="/teams/create" element={<TeamCreate />} />
         <Route path="/teams/:teamId" element={<TeamDetailWrapper />} />
       </Routes>
     </BrowserRouter>
