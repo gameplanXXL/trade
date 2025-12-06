@@ -2,7 +2,7 @@
 epic: 008
 story: 04
 title: "Performance-Charts mit TradingView"
-status: backlog
+status: completed
 story_points: 5
 covers: [FR43]
 ---
@@ -57,11 +57,11 @@ export function PerformanceCharts({ teamId }: { teamId: number }) {
 
 ## Tasks
 
-- [ ] TradingView Chart Setup
-- [ ] P/L Line Chart
-- [ ] Drawdown Area Chart
-- [ ] Timeframe Selector
-- [ ] Responsive Sizing
+- [x] TradingView Chart Setup
+- [x] P/L Line Chart
+- [x] Drawdown Area Chart
+- [x] Timeframe Selector
+- [x] Responsive Sizing
 **Technical Notes:**
 - TradingView Lightweight Charts
 - Dark-Theme matching UX Design
