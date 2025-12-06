@@ -2,7 +2,7 @@
 epic: 007
 story: 03
 title: "Dashboard-Übersicht mit HealthBar"
-status: backlog
+status: done
 story_points: 3
 covers: [FR36, FR37]
 ---
