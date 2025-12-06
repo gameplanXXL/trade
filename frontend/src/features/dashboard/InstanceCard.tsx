@@ -5,6 +5,7 @@ import type { Team } from '@/types'
 import { PnLDisplay } from './PnLDisplay'
 import { MetricsRow } from './MetricsRow'
 import { QuickActions } from './QuickActions'
+import { TeamActions } from '@/features/teams/TeamActions'
 import { useNavigate } from 'react-router-dom'
 
 interface InstanceCardProps {
@@ -93,9 +94,12 @@ export function InstanceCard({ team, totalBudget, onAction }: InstanceCardProps)
             </CardTitle>
             <p className="mt-1 text-sm text-text-secondary">{team.symbol}</p>
           </div>
-          <Badge variant={mode === 'live' ? 'purple' : 'gray'}>
-            {mode.toUpperCase()}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={mode === 'live' ? 'purple' : 'gray'}>
+              {mode.toUpperCase()}
+            </Badge>
+            <TeamActions team={team} />
+          </div>
         </div>
       </CardHeader>
 

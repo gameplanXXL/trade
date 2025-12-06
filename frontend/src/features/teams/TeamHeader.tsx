@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import type { Team } from '@/types'
 import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { TeamActions } from './TeamActions'
 
 interface TeamHeaderProps {
   team: Team
@@ -47,11 +48,14 @@ export function TeamHeader({ team }: TeamHeaderProps) {
           </div>
         </div>
 
-        <div className="text-right">
-          <div className="text-sm text-text-secondary">{team.symbol}</div>
-          <div className="text-xs text-text-muted">
-            Created {new Date(team.created_at).toLocaleDateString()}
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="text-sm text-text-secondary">{team.symbol}</div>
+            <div className="text-xs text-text-muted">
+              Created {new Date(team.created_at).toLocaleDateString()}
+            </div>
           </div>
+          <TeamActions team={team} />
         </div>
       </div>
     </div>
