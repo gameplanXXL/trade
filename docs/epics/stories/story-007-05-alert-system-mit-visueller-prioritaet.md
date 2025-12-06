@@ -2,7 +2,7 @@
 epic: 007
 story: 05
 title: "Alert-System mit visueller Priorität"
-status: backlog
+status: completed
 story_points: 3
 covers: [FR38]
 ---
