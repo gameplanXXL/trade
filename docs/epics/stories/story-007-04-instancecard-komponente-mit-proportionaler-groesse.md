@@ -2,7 +2,7 @@
 epic: 007
 story: 04
 title: "InstanceCard Komponente mit proportionaler Größe"
-status: backlog
+status: done
 story_points: 5
 covers: [FR36, FR37]
 ---
@@ -64,11 +64,11 @@ export function InstanceCard({ team, onAction }: InstanceCardProps) {
 
 ## Tasks
 
-- [ ] Size-Calculation Logik
-- [ ] Color-Coding nach P/L
-- [ ] PnL Display Komponente
-- [ ] Quick Actions
-- [ ] Responsive Layout
+- [x] Size-Calculation Logik
+- [x] Color-Coding nach P/L
+- [x] PnL Display Komponente
+- [x] Quick Actions
+- [x] Responsive Layout
 **Technical Notes:**
 - CSS Grid mit dynamischen grid-area Sizes
 - Framer Motion für Größen-Animationen
