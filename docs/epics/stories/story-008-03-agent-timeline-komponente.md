@@ -2,9 +2,10 @@
 epic: 008
 story: 03
 title: "Agent-Timeline Komponente"
-status: backlog
+status: completed
 story_points: 3
 covers: [FR42, FR44]
+completed_at: 2025-12-06
 ---
 
 ## Story 8.3: Agent-Timeline Komponente
