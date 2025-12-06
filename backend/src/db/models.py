@@ -2,13 +2,29 @@
 
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 from typing import Any
 
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, Numeric, String, func
+from sqlalchemy import DateTime, Enum as SQLEnum, Float, ForeignKey, Index, Integer, Numeric, String, func
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.session import Base
+
+
+class TeamInstanceStatus(str, Enum):
+    """Status of a team instance."""
+
+    ACTIVE = "active"
+    PAUSED = "paused"
+    STOPPED = "stopped"
+
+
+class TeamInstanceMode(str, Enum):
+    """Trading mode for a team instance."""
+
+    PAPER = "paper"
+    LIVE = "live"
 
 
 class User(Base):
@@ -40,6 +56,22 @@ class TeamInstance(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+    template_name: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    # Status and mode (Story 005-01)
+    status: Mapped[TeamInstanceStatus] = mapped_column(
+        SQLEnum(TeamInstanceStatus),
+        nullable=False,
+        default=TeamInstanceStatus.STOPPED,
+    )
+    mode: Mapped[TeamInstanceMode] = mapped_column(
+        SQLEnum(TeamInstanceMode),
+        nullable=False,
+        default=TeamInstanceMode.PAPER,
+    )
+
+    # Trading symbols (canonical format: EUR/USD)
+    symbols: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
 
     # Budget tracking (Story 004-05)
     initial_budget: Mapped[Decimal] = mapped_column(
@@ -68,6 +100,11 @@ class TeamInstance(Base):
         server_default=func.now(),
         nullable=False,
     )
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        onupdate=func.now(),
+        nullable=True,
+    )
 
     # Relationships
     trades: Mapped[list["Trade"]] = relationship(
@@ -77,10 +114,15 @@ class TeamInstance(Base):
         "AgentDecisionLog", backref="team_instance"
     )
 
+    __table_args__ = (
+        Index("ix_team_instances_status", "status"),
+        Index("ix_team_instances_created_at", "created_at"),
+    )
+
     def __repr__(self) -> str:
         return (
             f"<TeamInstance(id={self.id}, name={self.name!r}, "
-            f"budget={self.current_budget})>"
+            f"status={self.status.value}, budget={self.current_budget})>"
         )
 
 

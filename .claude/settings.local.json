@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(docker --version:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker compose:*)",
+      "Bash(uv --version:*)",
+      "Bash(pnpm --version:*)",
+      "Bash(powershell -Command \"irm https://astral.sh/uv/install.ps1 | iex\")",
+      "Bash(curl:*)",
+      "Bash(sh)",
+      "Bash(/c/Users/neise/.local/bin/uv --version)",
+      "Bash(npm --version:*)",
+      "Bash(npm install:*)",
+      "Bash(make:*)",
+      "Bash(echo:*)",
+      "Bash(git checkout:*)",
+      "Bash(docker info:*)",
+      "Bash(where pnpm:*)",
+      "Bash(python -m py_compile:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

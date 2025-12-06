@@ -1,29 +1,49 @@
 # Trading Platform - Makefile
 # Usage: make start | make stop | make logs | make status
 
-.PHONY: start stop logs status backend frontend db clean help
+# Force bash shell for Windows Git Bash compatibility
+SHELL := /bin/bash
+
+.PHONY: start stop logs status backend frontend db clean help check-docker install-deps
 
 # Default target
 .DEFAULT_GOAL := help
 
-# pnpm path
-PNPM_HOME := $(HOME)/.local/share/pnpm
-PATH := $(PNPM_HOME):$(PATH)
-export PATH
+# pnpm - use system pnpm directly (installed via npm)
+PNPM := pnpm
 
 # =============================================================================
 # Main Commands
 # =============================================================================
 
+## Check if Docker daemon is running
+check-docker:
+	@docker info > /dev/null 2>&1 || (echo ""; \
+		echo "❌ Docker ist nicht gestartet!"; \
+		echo ""; \
+		echo "   Bitte starte Docker Desktop:"; \
+		echo "   → Windows: Startmenü → 'Docker Desktop' suchen und starten"; \
+		echo "   → Warte bis das Docker-Symbol in der Taskleiste erscheint"; \
+		echo "   → Führe dann 'make start' erneut aus"; \
+		echo ""; \
+		exit 1)
+
+## Install dependencies if missing
+install-deps:
+	@if [ ! -d "frontend/node_modules" ]; then \
+		echo "📦 Installing frontend dependencies..."; \
+		cd frontend && $(PNPM) install; \
+	fi
+
 ## Start all services (stops first if running)
-start: stop
+start: check-docker install-deps stop
 	@echo "🚀 Starting Trading Platform..."
 	@docker compose up -d postgres redis
 	@echo "⏳ Waiting for databases..."
 	@sleep 3
 	@cd backend && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000 &
 	@sleep 2
-	@cd frontend && $(PNPM_HOME)/pnpm dev --host 0.0.0.0 &
+	@cd frontend && $(PNPM) dev --host 0.0.0.0 &
 	@echo ""
 	@echo "✅ Trading Platform started!"
 	@echo "   Backend:  http://localhost:8000"
@@ -72,7 +92,7 @@ backend: db
 
 ## Start only frontend
 frontend:
-	@cd frontend && $(PNPM_HOME)/pnpm dev --host 0.0.0.0
+	@cd frontend && $(PNPM) dev --host 0.0.0.0
 
 # =============================================================================
 # Development
@@ -84,7 +104,7 @@ test-backend:
 
 ## Run frontend tests
 test-frontend:
-	@cd frontend && $(PNPM_HOME)/pnpm test
+	@cd frontend && $(PNPM) test
 
 ## Run all tests
 test: test-backend test-frontend
@@ -94,7 +114,7 @@ lint:
 	@echo "🔍 Linting backend..."
 	@cd backend && uv run ruff check src/
 	@echo "🔍 Linting frontend..."
-	@cd frontend && $(PNPM_HOME)/pnpm lint
+	@cd frontend && $(PNPM) lint
 
 ## Clean up (remove containers, volumes, node_modules)
 clean: stop

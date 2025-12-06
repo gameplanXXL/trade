@@ -40,3 +40,15 @@ class ConfigurationError(TradingError):
     """Configuration error."""
 
     code = "CONFIGURATION_ERROR"
+
+
+class TemplateNotFoundError(TradingError):
+    """Team template file not found."""
+
+    code = "TEMPLATE_NOT_FOUND"
+
+
+class InsufficientBudgetError(TradingError):
+    """Insufficient budget for operation."""
+
+    code = "INSUFFICIENT_BUDGET"

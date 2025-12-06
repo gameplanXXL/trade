@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.deps import RedisDep
 from src.api.exception_handlers import trading_error_handler, unhandled_exception_handler
+from src.api.routes import teams_router
 from src.config.settings import get_settings
 from src.core.exceptions import TradingError
 from src.core.logging import get_logger, setup_logging
@@ -55,6 +56,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register API routers
+app.include_router(teams_router)
 
 
 @app.get("/health")
