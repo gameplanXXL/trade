@@ -1,110 +1,60 @@
 import type { Alert } from '@/types'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertCircle, AlertTriangle, Info, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { AlertCard } from './AlertCard'
+import { useTeamStore } from '@/stores/teamStore'
 
 interface AlertListProps {
   alerts: Alert[]
-  onDismiss?: (alertId: string) => void
+  onDismiss: (alertId: string) => void
 }
+
+/**
+ * Priority mapping for sorting
+ * crash = 0 (highest), warning = 1, info = 2 (lowest)
+ */
+const SEVERITY_PRIORITY = {
+  crash: 0,
+  warning: 1,
+  info: 2,
+} as const
 
 /**
  * AlertList Component
  *
- * Displays system alerts with severity-based styling
- * Placeholder implementation - will be enhanced in later stories
+ * Displays system alerts in fixed position (bottom-right) with:
+ * - Priority-based sorting (crash > warning > info)
+ * - Maximum 5 visible alerts
+ * - Individual AlertCard components with auto-dismiss
  */
 export function AlertList({ alerts, onDismiss }: AlertListProps) {
+  const { teams } = useTeamStore()
+
   if (alerts.length === 0) {
     return null
   }
 
-  return (
-    <div className="mx-auto max-w-7xl px-6 pb-8">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg text-text-primary">
-            System Alerts
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {alerts.map((alert) => (
-              <AlertItem
-                key={alert.id}
-                alert={alert}
-                onDismiss={onDismiss}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
+  // Sort alerts by priority (crash first, then warning, then info)
+  const sortedAlerts = [...alerts].sort((a, b) => {
+    return SEVERITY_PRIORITY[a.severity] - SEVERITY_PRIORITY[b.severity]
+  })
 
-/**
- * AlertItem Component
- *
- * Individual alert with icon and dismiss button
- */
-function AlertItem({
-  alert,
-  onDismiss,
-}: {
-  alert: Alert
-  onDismiss?: (alertId: string) => void
-}) {
-  const severityConfig = {
-    crash: {
-      icon: AlertCircle,
-      bgColor: 'bg-critical bg-opacity-10',
-      borderColor: 'border-critical',
-      textColor: 'text-critical',
-      iconColor: 'text-critical',
-    },
-    warning: {
-      icon: AlertTriangle,
-      bgColor: 'bg-warning bg-opacity-10',
-      borderColor: 'border-warning',
-      textColor: 'text-warning',
-      iconColor: 'text-warning',
-    },
-    info: {
-      icon: Info,
-      bgColor: 'bg-accent bg-opacity-10',
-      borderColor: 'border-accent',
-      textColor: 'text-accent',
-      iconColor: 'text-accent',
-    },
+  // Limit to maximum 5 alerts
+  const visibleAlerts = sortedAlerts.slice(0, 5)
+
+  // Helper to get team name
+  const getTeamName = (teamId: number): string | undefined => {
+    return teams.find((team) => team.id === teamId)?.name
   }
 
-  const config = severityConfig[alert.severity]
-  const Icon = config.icon
-
   return (
-    <div
-      className={`flex items-start gap-3 rounded-lg border ${config.borderColor} ${config.bgColor} p-4`}
-    >
-      <Icon className={`mt-0.5 h-5 w-5 flex-shrink-0 ${config.iconColor}`} />
-      <div className="flex-1">
-        <p className={`text-sm font-medium ${config.textColor}`}>
-          {alert.message}
-        </p>
-        <p className="mt-1 text-xs text-text-muted">
-          {new Date(alert.timestamp).toLocaleString()}
-        </p>
-      </div>
-      {onDismiss && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0"
-          onClick={() => onDismiss(alert.id)}
-        >
-          <X className="h-4 w-4 text-text-muted hover:text-text-primary" />
-        </Button>
-      )}
+    <div className="fixed bottom-4 right-4 z-50 space-y-2">
+      {visibleAlerts.map((alert) => (
+        <AlertCard
+          key={alert.id}
+          alert={alert}
+          onDismiss={onDismiss}
+          teamName={getTeamName(alert.team_id)}
+        />
+      ))}
     </div>
   )
 }

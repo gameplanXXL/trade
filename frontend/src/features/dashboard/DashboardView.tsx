@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useTeamStore } from '@/stores/teamStore'
+import { wsClient } from '@/lib/socket'
 import { HealthBar } from './HealthBar'
 import { TeamGrid } from './TeamGrid'
 import { AlertList } from './AlertList'
+import type { Alert, TeamStatusUpdate } from '@/types'
 
 /**
  * DashboardView Component
@@ -15,12 +17,45 @@ import { AlertList } from './AlertList'
  * Data is fetched from Zustand store and updated via WebSocket
  */
 export function DashboardView() {
-  const { teams, alerts, fetchTeams, removeAlert, isLoading, error } = useTeamStore()
+  const { teams, alerts, fetchTeams, removeAlert, addAlert, updateTeamStatus, isLoading, error } =
+    useTeamStore()
+
+  // WebSocket callbacks
+  const handleAlert = useCallback(
+    (alert: Alert) => {
+      addAlert(alert)
+    },
+    [addAlert]
+  )
+
+  const handleTeamStatusChanged = useCallback(
+    (statusUpdate: TeamStatusUpdate) => {
+      updateTeamStatus(statusUpdate.team_id, statusUpdate)
+    },
+    [updateTeamStatus]
+  )
 
   // Fetch teams on mount
   useEffect(() => {
     fetchTeams()
   }, [fetchTeams])
+
+  // WebSocket connection lifecycle
+  useEffect(() => {
+    // Connect WebSocket
+    wsClient.connect()
+
+    // Subscribe to alert events
+    wsClient.onAlert(handleAlert)
+    wsClient.onTeamStatusChanged(handleTeamStatusChanged)
+
+    // Cleanup on unmount
+    return () => {
+      wsClient.offAlert(handleAlert)
+      wsClient.offTeamStatusChanged(handleTeamStatusChanged)
+      wsClient.disconnect()
+    }
+  }, [handleAlert, handleTeamStatusChanged])
 
   // Error state
   if (error) {

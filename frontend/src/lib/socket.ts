@@ -120,8 +120,9 @@ class WebSocketClient {
       console.warn('Cannot subscribe to alerts: socket not initialized')
       return
     }
-    this.socket.on('alert:warning', callback)
     this.socket.on('alert:crash', callback)
+    this.socket.on('alert:warning', callback)
+    this.socket.on('alert:info', callback)
   }
 
   offTeamStatusChanged(callback?: TeamStatusCallback): void {
@@ -136,8 +137,9 @@ class WebSocketClient {
 
   offAlert(callback?: AlertCallback): void {
     if (!this.socket) return
-    this.socket.off('alert:warning', callback)
     this.socket.off('alert:crash', callback)
+    this.socket.off('alert:warning', callback)
+    this.socket.off('alert:info', callback)
   }
 
   isConnected(): boolean {
