@@ -36,13 +36,34 @@ export interface Team {
 
 export interface Trade {
   id: number
-  team_id: number
+  team_instance_id: number
+  ticket: number
   symbol: string
-  action: 'BUY' | 'SELL'
-  volume: number
-  price: number
-  executed_at: string
-  profit?: number
+  side: 'BUY' | 'SELL'
+  size: number
+  entry_price: number
+  exit_price: number | null
+  stop_loss: number | null
+  take_profit: number | null
+  pnl: number | null
+  spread_cost: number
+  status: 'open' | 'closed'
+  opened_at: string
+  closed_at: string | null
+  magic_number: number
+  comment: string | null
+}
+
+export interface TradeListMeta {
+  timestamp: string
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface TradeListResponse {
+  data: Trade[]
+  meta: TradeListMeta
 }
 
 export interface Alert {
