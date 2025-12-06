@@ -1,6 +1,8 @@
-# Epic 7: Dashboard - Übersicht & Real-time
+# Epic 7: Dashboard - Übersicht & Real-time ✅ COMPLETED
 
 **Epic Goal:** User öffnet Dashboard und sieht alle Team-Instanzen mit Status, P/L und Warnungen in Echtzeit
+
+**Status:** 5/5 Stories done (100%)
 
 ---
 

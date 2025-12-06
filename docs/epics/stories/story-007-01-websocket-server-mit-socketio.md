@@ -2,7 +2,7 @@
 epic: 007
 story: 01
 title: "WebSocket-Server mit Socket.io"
-status: backlog
+status: done
 story_points: 3
 covers: [FR39]
 ---
@@ -63,3 +63,20 @@ async def emit_alert(team_id: int, alert_type: str, message: str):
 
 **Prerequisites:** Story 1.1
 
+---
+
+## Implementation Notes (2025-12-06)
+
+**Story vollständig umgesetzt:**
+
+- ✅ `src/api/websocket/handler.py`:
+  - `socketio.AsyncServer` mit ASGI Mode
+  - `connect()` und `disconnect()` Event-Handler
+  - `join_team()` und `leave_team()` für Room-Subscriptions
+  - Rooms für Team-spezifische Updates (`team:{id}`)
+- ✅ `src/api/websocket/events.py`:
+  - `emit_team_status()`: Status-Änderungen an Team-Room
+  - `emit_trade_executed()`: Trade-Events an Team-Room
+  - `emit_alert()`: System-Alerts an globalen Room
+- ✅ CORS für alle Origins konfiguriert
+- ✅ Strukturiertes Logging für Connections

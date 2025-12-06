@@ -1,6 +1,8 @@
-# Epic 1: Foundation & Projekt-Setup
+# Epic 1: Foundation & Projekt-Setup ✅ COMPLETED
 
 **Epic Goal:** Entwicklungsumgebung steht, Basis-Infrastruktur läuft, erstes Deployment möglich
+
+**Status:** 7/7 Stories done (100%)
 
 ---
 

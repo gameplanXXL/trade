@@ -2,7 +2,7 @@
 epic: 006
 story: 04
 title: "Analytics REST-API Endpoints"
-status: backlog
+status: done
 story_points: 2
 ---
 
@@ -53,3 +53,19 @@ async def get_agent_activity(
 
 **Prerequisites:** Story 6.1, 6.2, 6.3
 
+---
+
+## Implementation Notes (2025-12-06)
+
+**Story vollständig umgesetzt:**
+
+- ✅ `src/api/routes/analytics.py` mit allen Endpoints:
+  - `GET /api/analytics/teams/{team_id}/summary`: Performance Summary
+  - `GET /api/analytics/teams/{team_id}/history`: Historische Metriken
+  - `GET /api/analytics/teams/{team_id}/pnl-by-symbol`: P/L nach Symbol
+  - `GET /api/analytics/teams/{team_id}/activity`: Agent-Entscheidungen
+  - `GET /api/analytics/teams/{team_id}/activity-summary`: Aggregierte Activity
+- ✅ Query-Parameter für Filterung (period, since, limit, agent, type)
+- ✅ Pydantic Response Models für Validierung
+- ✅ HTTP 404 Handling für nicht gefundene Teams
+- ✅ Strukturiertes Logging

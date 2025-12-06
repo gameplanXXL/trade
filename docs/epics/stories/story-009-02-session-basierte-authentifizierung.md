@@ -2,7 +2,7 @@
 epic: 009
 story: 02
 title: "Session-basierte Authentifizierung"
-status: backlog
+status: done
 story_points: 3
 covers: [FR50]
 ---
@@ -72,3 +72,23 @@ async def get_current_user(request: Request, redis: Redis = Depends(get_redis)) 
 
 **Prerequisites:** Story 1.4
 
+---
+
+## Implementation Notes (2025-12-06)
+
+**Story vollständig umgesetzt:**
+
+- ✅ `src/api/routes/auth.py`:
+  - `POST /api/auth/login`: Validiert Credentials, erstellt Session, setzt Cookie
+  - `POST /api/auth/logout`: Löscht Session und Cookie
+  - `GET /api/auth/me`: Gibt aktuelle User-Info zurück
+- ✅ Session-Management:
+  - `secrets.token_urlsafe(32)` für sichere Token
+  - Redis Session Storage via `SessionManager`
+  - httponly Cookie mit samesite="lax"
+  - Session-TTL: 24 Stunden (86400 Sekunden)
+- ✅ Auth-Dependencies:
+  - `CurrentUserDep` für geschützte Routes
+  - `SessionManagerDep` für Session-Operations
+- ✅ `AuthService` mit `validate_credentials()` und bcrypt Password-Hashing
+- ✅ secure=True nur in Production (HTTPS)

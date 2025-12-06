@@ -1,6 +1,8 @@
-# Epic 9: Authentifizierung & Sicherheit
+# Epic 9: Authentifizierung & Sicherheit ✅ COMPLETED
 
 **Epic Goal:** User kann sich einloggen; Credentials sind sicher gespeichert
+
+**Status:** 5/5 Stories done (100%)
 
 ---
 
@@ -48,7 +50,9 @@ class CredentialService:
 
 ---
 
-## Story 9.2: Session-basierte Authentifizierung
+## Story 9.2: Session-basierte Authentifizierung ✅
+
+**Status:** completed
 
 Als Operator,
 möchte ich mich mit Username/Password einloggen,

@@ -1,6 +1,8 @@
-# Epic 6: Performance Analytics
+# Epic 6: Performance Analytics ✅ COMPLETED
 
 **Epic Goal:** User sieht Trading-Metriken (P/L, Win-Rate, Sharpe Ratio, Drawdown) für jede Team-Instanz
+
+**Status:** 4/4 Stories done (100%)
 
 ---
 
@@ -68,7 +70,9 @@ class PerformanceSummary(BaseModel):
 
 ---
 
-## Story 6.2: Performance-Historie und Aggregationen
+## Story 6.2: Performance-Historie und Aggregationen ✅
+
+**Status:** completed
 
 Als Operator,
 möchte ich historische Performance-Daten,
@@ -166,7 +170,9 @@ class ActivitySummary(BaseModel):
 
 ---
 
-## Story 6.4: Analytics REST-API Endpoints
+## Story 6.4: Analytics REST-API Endpoints ✅
+
+**Status:** completed
 
 Als Operator,
 möchte ich Analytics-Daten über API abrufen,

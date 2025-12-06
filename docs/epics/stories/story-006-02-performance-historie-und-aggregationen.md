@@ -2,7 +2,7 @@
 epic: 006
 story: 02
 title: "Performance-Historie und Aggregationen"
-status: backlog
+status: done
 story_points: 3
 covers: [FR34]
 ---
@@ -52,3 +52,19 @@ async def aggregate_performance():
 
 **Prerequisites:** Story 6.1
 
+---
+
+## Implementation Notes (2025-12-06)
+
+**Story vollständig umgesetzt:**
+
+- ✅ `PerformanceMetric` Model in `src/db/models.py`:
+  - team_instance_id, timestamp, period (hourly/daily/weekly)
+  - pnl, pnl_percent, win_rate, sharpe_ratio, max_drawdown, trade_count
+  - Indizes auf team_instance_id, timestamp, period
+- ✅ `aggregate_performance()` in AnalyticsService:
+  - Berechnet aktuelle Metriken und speichert in performance_metrics
+- ✅ `get_performance_history()` für Trend-Analyse:
+  - Filterbar nach period, start_time, end_time
+  - Sortiert nach timestamp (newest first)
+- ✅ `get_latest_metric()` für aktuellste Metrik

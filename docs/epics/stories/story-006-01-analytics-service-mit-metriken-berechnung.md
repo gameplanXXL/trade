@@ -2,7 +2,7 @@
 epic: 006
 story: 01
 title: "Analytics-Service mit Metriken-Berechnung"
-status: backlog
+status: done
 story_points: 5
 covers: [FR29, FR30, FR31, FR32, FR33]
 ---
@@ -64,11 +64,11 @@ class PerformanceSummary(BaseModel):
 
 ## Tasks
 
-- [ ] P/L Berechnung
-- [ ] Win-Rate Berechnung
-- [ ] Sharpe Ratio Implementierung
-- [ ] Max Drawdown Berechnung
-- [ ] Caching mit Redis
+- [x] P/L Berechnung
+- [x] Win-Rate Berechnung
+- [x] Sharpe Ratio Implementierung
+- [x] Max Drawdown Berechnung
+- [ ] Caching mit Redis (optional, MVP on-demand)
 **Technical Notes:**
 - TimescaleDB time_bucket für Aggregationen
 - Caching für häufig abgefragte Metriken (Redis)
@@ -76,3 +76,19 @@ class PerformanceSummary(BaseModel):
 
 **Prerequisites:** Story 4.5, 5.1
 
+---
+
+## Implementation Notes (2025-12-06)
+
+**Story vollständig umgesetzt:**
+
+- ✅ `src/services/analytics.py` mit AnalyticsService:
+  - `calculate_total_pnl()`: Gesamt P/L (realized + unrealized)
+  - `calculate_pnl_by_symbol()`: P/L aufgeschlüsselt nach Symbol
+  - `calculate_win_rate()`: Win Rate = winning_trades / total_trades
+  - `calculate_sharpe_ratio()`: Risk-adjusted Return mit konfigurierbarem Risk-Free-Rate
+  - `calculate_max_drawdown()`: Maximum Drawdown vom Peak Equity
+  - `get_performance_summary()`: Alle Metriken in einem Call
+- ✅ `PerformanceSummary` Pydantic Model mit allen Feldern
+- ✅ Strukturiertes Logging für alle Berechnungen
+- ✅ On-demand Berechnung (MVP)
