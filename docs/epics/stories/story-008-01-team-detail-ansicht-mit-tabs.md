@@ -2,9 +2,10 @@
 epic: 008
 story: 01
 title: "Team-Detail-Ansicht mit Tabs"
-status: backlog
+status: done
 story_points: 3
 covers: [FR40]
+completed_at: 2025-12-06
 ---
 
 ## Story 8.1: Team-Detail-Ansicht mit Tabs
