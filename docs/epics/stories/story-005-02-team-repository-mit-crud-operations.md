@@ -2,7 +2,7 @@
 epic: 005
 story: 02
 title: "Team-Repository mit CRUD-Operations"
-status: backlog
+status: completed
 story_points: 2
 covers: [FR6, FR11]
 ---
