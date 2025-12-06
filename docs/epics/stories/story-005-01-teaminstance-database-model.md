@@ -2,7 +2,7 @@
 epic: 005
 story: 01
 title: "TeamInstance Database Model"
-status: backlog
+status: done
 story_points: 2
 covers: [FR6, FR7, FR8, FR10, FR11]
 ---
@@ -57,3 +57,20 @@ class TeamInstance(Base):
 
 **Prerequisites:** Story 1.3
 
+---
+
+## Implementation Notes (2025-12-06)
+
+**Story vollständig umgesetzt:**
+
+- ✅ `src/db/models.py` enthält vollständiges TeamInstance-Model:
+  - `TeamInstanceStatus` Enum (active, paused, stopped)
+  - `TeamInstanceMode` Enum (paper, live)
+  - Alle Felder: id, name, template_name, status, mode, symbols (JSON)
+  - Budget-Tracking: initial_budget, current_budget, realized_pnl, unrealized_pnl
+  - Timestamps: created_at, updated_at
+  - Relationships: trades, decisions (AgentDecisionLog)
+- ✅ Alembic-Migration `20251206_0002_team_instance_full_schema.py` erstellt Tabellen
+- ✅ Decimal mit precision=18, scale=2 für Geldbeträge
+- ✅ Indizes auf `status` und `created_at`
+- ✅ Cascade delete für trades Relationship

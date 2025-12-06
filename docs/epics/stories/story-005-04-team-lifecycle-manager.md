@@ -2,7 +2,7 @@
 epic: 005
 story: 04
 title: "Team-Lifecycle-Manager"
-status: backlog
+status: done
 story_points: 5
 covers: [FR9]
 ---
@@ -64,11 +64,11 @@ class TeamLifecycleManager:
 
 ## Tasks
 
-- [ ] Team-Start Logik
-- [ ] Team-Pause/Resume
-- [ ] Team-Stop mit Position-Closing
-- [ ] Restart Recovery
-- [ ] Graceful Shutdown
+- [x] Team-Start Logik
+- [x] Team-Pause/Resume
+- [x] Team-Stop mit Position-Closing
+- [x] Restart Recovery
+- [x] Graceful Shutdown
 **Technical Notes:**
 - Orchestrators werden im Memory gehalten
 - Bei Restart: Alle ACTIVE Teams automatisch starten
@@ -76,3 +76,26 @@ class TeamLifecycleManager:
 
 **Prerequisites:** Story 3.5, 5.3
 
+---
+
+## Implementation Notes (2025-12-06)
+
+**Story vollständig umgesetzt:**
+
+- ✅ `src/services/team_lifecycle.py` mit TeamLifecycleManager:
+  - `start_team()`: Lädt Template, erstellt Orchestrator, startet Trading-Loop
+  - `pause_team()`: Stoppt Trading-Loop, behält Orchestrator im Memory
+  - `resume_team()`: Nutzt existierenden Orchestrator oder erstellt neuen
+  - `stop_team()`: Schließt Positionen, entfernt Orchestrator
+  - `get_running_teams()`: Gibt IDs aller aktiven Teams zurück
+  - `get_orchestrator()`: Zugriff auf Orchestrator eines Teams
+- ✅ In-Memory-Tracking: `_orchestrators` und `_tasks` Dictionaries
+- ✅ Start-Validierung:
+  - Template existiert und ist valide
+  - Budget > 0
+  - Symbols im kanonischen Format (XXX/YYY)
+- ✅ `startup()`: Auto-Start aller zuvor aktiven Teams bei App-Start
+- ✅ `shutdown()`: Graceful Shutdown mit Position-Closing
+- ✅ `_close_all_positions()`: Schließt alle offenen Trades beim Stoppen
+- ✅ `_trading_loop()`: Asynchroner Trading-Loop mit konfigurierbarem Intervall
+- ✅ Strukturiertes Logging für alle Operationen
