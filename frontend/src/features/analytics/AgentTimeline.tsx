@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/timeline'
 import { useAgentActivity } from '@/hooks/useAgentActivity'
 import type { AgentDecision, DecisionType } from '@/types'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 
 interface AgentTimelineProps {
   teamId: number
@@ -82,6 +83,10 @@ export function AgentTimeline({ teamId }: AgentTimelineProps) {
     agent: undefined,
     type: undefined,
   })
+  const [expandedDecisions, setExpandedDecisions] = useState<Set<number>>(new Set())
+  const [autoScroll, setAutoScroll] = useState(true)
+  const timelineRef = useRef<HTMLDivElement>(null)
+  const prevDecisionsCountRef = useRef(0)
 
   const { decisions, isLoading, error } = useAgentActivity(teamId, {
     agent: filters.agent,
@@ -91,6 +96,38 @@ export function AgentTimeline({ teamId }: AgentTimelineProps) {
 
   const uniqueAgents = getUniqueAgents(decisions)
   const uniqueTypes = getUniqueTypes(decisions)
+
+  // Auto-scroll to top when new decisions arrive
+  useEffect(() => {
+    if (autoScroll && decisions.length > prevDecisionsCountRef.current) {
+      timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+    prevDecisionsCountRef.current = decisions.length
+  }, [decisions.length, autoScroll])
+
+  const toggleExpanded = (decisionId: number) => {
+    setExpandedDecisions((prev) => {
+      const next = new Set(prev)
+      if (next.has(decisionId)) {
+        next.delete(decisionId)
+      } else {
+        next.add(decisionId)
+      }
+      return next
+    })
+  }
+
+  const handleScroll = () => {
+    // Disable auto-scroll when user manually scrolls away from top
+    if (timelineRef.current && timelineRef.current.scrollTop > 50) {
+      setAutoScroll(false)
+    }
+  }
+
+  const scrollToTop = () => {
+    timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    setAutoScroll(true)
+  }
 
   if (error) {
     return (
@@ -176,33 +213,82 @@ export function AgentTimeline({ teamId }: AgentTimelineProps) {
             No agent decisions found for this team.
           </div>
         ) : (
-          <div className="max-h-[600px] overflow-y-auto pr-2">
-            <Timeline>
-              {decisions.map((decision) => (
-                <TimelineItem key={decision.id}>
-                  <TimelineIcon type={decision.decision_type} />
-                  <TimelineContent>
-                    <div className="flex items-start justify-between gap-2">
-                      <TimelineTitle>
-                        {decision.agent_name}: {decision.decision_type}
-                      </TimelineTitle>
-                      <Badge variant={getDecisionTypeBadgeVariant(decision.decision_type)}>
-                        {decision.decision_type}
-                      </Badge>
-                    </div>
-                    <TimelineDescription>
-                      {formatDecisionData(decision.data)}
-                    </TimelineDescription>
-                    {decision.confidence !== null && (
-                      <TimelineDescription className="text-text-muted">
-                        Confidence: {(decision.confidence * 100).toFixed(1)}%
-                      </TimelineDescription>
-                    )}
-                    <TimelineTime>{formatTime(decision.created_at)}</TimelineTime>
-                  </TimelineContent>
-                </TimelineItem>
-              ))}
-            </Timeline>
+          <div className="relative">
+            <div
+              ref={timelineRef}
+              onScroll={handleScroll}
+              className="max-h-[600px] overflow-y-auto pr-2 scroll-smooth"
+            >
+              <Timeline>
+                {decisions.map((decision) => {
+                  const isExpanded = expandedDecisions.has(decision.id)
+                  return (
+                    <TimelineItem key={decision.id}>
+                      <TimelineIcon type={decision.decision_type} />
+                      <TimelineContent>
+                        <div
+                          className="cursor-pointer hover:bg-surface-hover rounded-lg p-2 -m-2 transition-colors"
+                          onClick={() => toggleExpanded(decision.id)}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <TimelineTitle>
+                              {decision.agent_name}: {decision.decision_type}
+                            </TimelineTitle>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={getDecisionTypeBadgeVariant(decision.decision_type)}>
+                                {decision.decision_type}
+                              </Badge>
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4 text-text-muted" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-text-muted" />
+                              )}
+                            </div>
+                          </div>
+                          <TimelineDescription>
+                            {formatDecisionData(decision.data)}
+                          </TimelineDescription>
+                          {decision.confidence !== null && (
+                            <TimelineDescription className="text-text-muted">
+                              Confidence: {(decision.confidence * 100).toFixed(1)}%
+                            </TimelineDescription>
+                          )}
+                          <TimelineTime>{formatTime(decision.created_at)}</TimelineTime>
+
+                          {/* Expanded Details */}
+                          {isExpanded && (
+                            <div className="mt-3 pt-3 border-t border-border space-y-2">
+                              <div className="text-xs">
+                                <div className="font-semibold text-text-primary mb-1">Full Details:</div>
+                                <pre className="bg-surface-secondary p-2 rounded text-text-secondary overflow-x-auto">
+                                  {JSON.stringify(decision.data, null, 2)}
+                                </pre>
+                              </div>
+                              <div className="text-xs text-text-muted">
+                                <div>ID: {decision.id}</div>
+                                <div>Team Instance: {decision.team_instance_id}</div>
+                                <div>Timestamp: {new Date(decision.created_at).toLocaleString('de-DE')}</div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </TimelineContent>
+                    </TimelineItem>
+                  )
+                })}
+              </Timeline>
+            </div>
+
+            {/* Scroll to Top Button */}
+            {!autoScroll && (
+              <button
+                onClick={scrollToTop}
+                className="absolute bottom-4 right-4 bg-accent text-white p-2 rounded-full shadow-lg hover:bg-accent/90 transition-colors"
+                title="Scroll to newest entries"
+              >
+                <ChevronUp className="h-5 w-5" />
+              </button>
+            )}
           </div>
         )}
       </CardContent>

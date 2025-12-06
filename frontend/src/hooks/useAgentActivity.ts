@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { apiClient } from '@/lib/api'
 import type { AgentDecision } from '@/types'
 
 interface UseAgentActivityOptions {
@@ -38,16 +39,11 @@ export function useAgentActivity(
         if (agent) params.append('agent', agent)
         if (type) params.append('type', type)
 
-        const response = await fetch(
-          `http://localhost:8000/api/analytics/teams/${teamId}/activity?${params.toString()}`
+        const response = await apiClient.get<AgentDecision[]>(
+          `/api/analytics/teams/${teamId}/activity?${params.toString()}`
         )
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch agent activity: ${response.statusText}`)
-        }
-
-        const data: AgentDecision[] = await response.json()
-        setDecisions(data)
+        setDecisions(response.data)
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Unknown error'))
         setDecisions([])
