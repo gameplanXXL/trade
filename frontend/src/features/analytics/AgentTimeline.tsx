@@ -178,7 +178,7 @@ export function AgentTimeline({ teamId }: AgentTimelineProps) {
         ) : (
           <div className="max-h-[600px] overflow-y-auto pr-2">
             <Timeline>
-              {decisions.map((decision, index) => (
+              {decisions.map((decision) => (
                 <TimelineItem key={decision.id}>
                   <TimelineIcon type={decision.decision_type} />
                   <TimelineContent>
