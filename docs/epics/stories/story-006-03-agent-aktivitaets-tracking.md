@@ -2,7 +2,7 @@
 epic: 006
 story: 03
 title: "Agent-Aktivitäts-Tracking"
-status: backlog
+status: done
 story_points: 2
 covers: [FR35]
 ---
