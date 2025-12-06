@@ -4,7 +4,9 @@
 
 ---
 
-## Story 7.1: WebSocket-Server mit Socket.io
+## Story 7.1: WebSocket-Server mit Socket.io ✅
+
+**Status:** completed
 
 Als Operator,
 möchte ich Real-time-Updates im Dashboard,
