@@ -2,9 +2,10 @@
 epic: 008
 story: 05
 title: "Team-Erstellung via UI"
-status: backlog
+status: done
 story_points: 3
 covers: [FR45, FR48]
+completed_at: 2025-12-06
 ---
 
 ## Story 8.5: Team-Erstellung via UI
@@ -72,3 +73,23 @@ export function TeamCreate() {
 
 **Prerequisites:** Story 5.3, Story 7.3
 
+---
+
+## Implementation Notes (2025-12-06)
+
+**Story vollständig umgesetzt:**
+
+- ✅ `src/features/teams/TeamCreate.tsx`:
+  - React Hook Form mit Zod Validation
+  - Template-Auswahl mit `useTemplates()` Hook
+  - Multi-Select für Trading-Symbole (EUR/USD, GBP/USD, etc.)
+  - Budget-Input (min 100€)
+  - Paper/Live Mode Toggle mit Switch
+- ✅ Validation:
+  - Name: 3-50 Zeichen
+  - Budget: min 100€
+  - Symbols: min 1
+- ✅ Template-Preview mit Version, Rollen, Pipeline
+- ✅ Live-Mode Warning Alert
+- ✅ Error-Handling mit Alert-Komponente
+- ✅ Navigation nach erfolgreicher Erstellung

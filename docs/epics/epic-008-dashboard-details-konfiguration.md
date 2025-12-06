@@ -1,6 +1,8 @@
-# Epic 8: Dashboard - Details & Konfiguration
+# Epic 8: Dashboard - Details & Konfiguration ✅ COMPLETED
 
 **Epic Goal:** User kann Instanz-Details einsehen (Trade-Historie, Timeline, Charts) und neue Instanzen über die UI erstellen
+
+**Status:** 6/6 Stories done (100%)
 
 ---
 

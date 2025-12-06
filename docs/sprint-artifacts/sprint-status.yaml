@@ -104,13 +104,13 @@ development_status:
   epic-007-retrospective: optional
 
   # Epic 008: Dashboard - Details & Konfiguration (6 Stories)
-  epic-008: backlog
-  008-01-team-detail-ansicht-mit-tabs: backlog
-  008-02-trade-historie-mit-sortierung-und-filterung: backlog
-  008-03-agent-timeline-komponente: backlog
-  008-04-performance-charts-mit-tradingview: backlog
-  008-05-team-erstellung-via-ui: backlog
-  008-06-team-aktionen-pause-resume-stop-close-positions: backlog
+  epic-008: done
+  008-01-team-detail-ansicht-mit-tabs: done
+  008-02-trade-historie-mit-sortierung-und-filterung: done
+  008-03-agent-timeline-komponente: done
+  008-04-performance-charts-mit-tradingview: done
+  008-05-team-erstellung-via-ui: done
+  008-06-team-aktionen-pause-resume-stop-close-positions: done
   epic-008-retrospective: optional
 
   # Epic 009: Authentifizierung & Sicherheit (5 Stories)

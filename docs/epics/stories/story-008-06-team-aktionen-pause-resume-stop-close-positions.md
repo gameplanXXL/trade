@@ -2,9 +2,10 @@
 epic: 008
 story: 06
 title: "Team-Aktionen (Pause, Resume, Stop, Close Positions)"
-status: backlog
+status: done
 story_points: 3
 covers: [FR46, FR47]
+completed_at: 2025-12-06
 ---
 
 ## Story 8.6: Team-Aktionen (Pause, Resume, Stop, Close Positions)
@@ -83,3 +84,23 @@ export function TeamActions({ team, onComplete }: TeamActionsProps) {
 
 **Prerequisites:** Story 5.4, Story 8.1
 
+---
+
+## Implementation Notes (2025-12-06)
+
+**Story vollständig umgesetzt:**
+
+- ✅ `src/features/teams/TeamActions.tsx`:
+  - DropdownMenu mit allen Aktionen
+  - Pause (wenn active), Resume (wenn paused)
+  - Close Positions mit Confirmation Modal
+  - Stop Team mit Confirmation Modal
+- ✅ Hooks in `src/hooks/useTeamActions.ts`:
+  - `usePauseTeam()`, `useResumeTeam()`
+  - `useStopTeam()`, `useClosePositions()`
+  - TanStack Query Mutations
+- ✅ `ConfirmationModal` Komponente für kritische Aktionen
+- ✅ Optimistic UI Updates
+- ✅ Error-Handling mit Toast Notifications
+- ✅ Disabled State während Loading
+- ✅ Farbcodierung: warning für Close, critical für Stop
