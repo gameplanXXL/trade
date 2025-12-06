@@ -80,3 +80,15 @@ export interface TeamStatusUpdate {
   current_pnl?: number
   pnl_percent?: number
 }
+
+export type DecisionType = 'SIGNAL' | 'WARNING' | 'REJECTION' | 'OVERRIDE'
+
+export interface AgentDecision {
+  id: number
+  team_instance_id: number
+  agent_name: string
+  decision_type: DecisionType
+  data: Record<string, unknown>
+  confidence: number | null
+  created_at: string
+}
