@@ -4,7 +4,9 @@
 
 ---
 
-## Story 6.1: Analytics-Service mit Metriken-Berechnung
+## Story 6.1: Analytics-Service mit Metriken-Berechnung ✅
+
+**Status:** completed
 
 Als Operator,
 möchte ich Trading-Metriken für jede Team-Instanz,

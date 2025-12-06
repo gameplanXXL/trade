@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.api.deps import DbDep
 from src.api.schemas.analytics import (
+    ActivitySummary,
     AgentDecisionResponse,
     PerformanceMetricResponse,
     PerformanceSummary,
@@ -146,6 +147,7 @@ async def get_agent_activity(
     service: AnalyticsServiceDep,
     agent: str | None = Query(default=None, description="Filter by agent name"),
     type: str | None = Query(default=None, description="Filter by decision type"),
+    since: datetime | None = Query(default=None, description="Filter decisions after this timestamp (ISO 8601)"),
     limit: int = Query(default=100, ge=1, le=1000, description="Maximum number of records"),
 ) -> list[AgentDecisionResponse]:
     """Get agent decision history for a team instance.
@@ -157,6 +159,7 @@ async def get_agent_activity(
         team_id: Team instance ID
         agent: Optional filter by agent name
         type: Optional filter by decision type (e.g., 'SIGNAL', 'WARNING')
+        since: Optional filter for decisions after this timestamp (ISO 8601)
         limit: Maximum number of records to return (1-1000)
 
     Returns:
@@ -170,6 +173,7 @@ async def get_agent_activity(
             team_id=team_id,
             agent_name=agent,
             decision_type=type,
+            since=since,
         )
         # Apply limit after fetching (service doesn't have limit parameter)
         decisions = decisions[:limit]
@@ -178,9 +182,41 @@ async def get_agent_activity(
             team_id=team_id,
             agent=agent,
             type=type,
+            since=since,
             count=len(decisions),
         )
         return decisions
+    except TeamNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "TEAM_NOT_FOUND", "message": str(e)},
+        ) from e
+
+
+@router.get("/teams/{team_id}/activity-summary", response_model=ActivitySummary)
+async def get_activity_summary(
+    team_id: int,
+    service: AnalyticsServiceDep,
+) -> ActivitySummary:
+    """Get aggregated summary of agent activities for a team instance.
+
+    Returns counts of all agent decisions grouped by type including:
+    - Trading signals (BUY, SELL, HOLD)
+    - Warnings, rejections, and overrides
+
+    Args:
+        team_id: Team instance ID
+
+    Returns:
+        ActivitySummary with aggregated decision counts
+
+    Raises:
+        404: Team instance not found
+    """
+    try:
+        summary = await service.get_activity_summary(team_id)
+        log.info("activity_summary_retrieved", team_id=team_id)
+        return summary
     except TeamNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

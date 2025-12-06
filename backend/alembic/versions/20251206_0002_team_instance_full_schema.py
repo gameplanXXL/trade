@@ -171,6 +171,9 @@ def upgrade() -> None:
     op.create_index(
         "ix_agent_decisions_agent_name", "agent_decisions", ["agent_name"]
     )
+    op.create_index(
+        "ix_agent_decisions_decision_type", "agent_decisions", ["decision_type"]
+    )
 
     # Note: TimescaleDB hypertable conversion requires composite primary keys
     # including the time column. For now, using regular tables with indexes.

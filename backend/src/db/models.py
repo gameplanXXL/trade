@@ -244,6 +244,7 @@ class AgentDecisionLog(Base):
         Index("ix_agent_decisions_team_instance_id", "team_instance_id"),
         Index("ix_agent_decisions_created_at", "created_at"),
         Index("ix_agent_decisions_agent_name", "agent_name"),
+        Index("ix_agent_decisions_decision_type", "decision_type"),
     )
 
     def __repr__(self) -> str:

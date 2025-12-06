@@ -15,6 +15,8 @@ from src.config.settings import get_settings
 from src.core.exceptions import TradingError
 from src.core.logging import get_logger, setup_logging
 from src.core.redis import close_redis_pool
+from src.core.scheduler import start_scheduler, stop_scheduler
+from src.db.session import async_session_factory
 
 settings = get_settings()
 
@@ -33,8 +35,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         host=settings.api_host,
         port=settings.api_port,
     )
+
+    # Start background scheduler for performance aggregation
+    start_scheduler(async_session_factory)
+    log.info("background_scheduler_started")
+
     yield
+
     # Shutdown
+    stop_scheduler()
+    log.info("background_scheduler_stopped")
     await close_redis_pool()
     log.info("application_shutdown")
 
