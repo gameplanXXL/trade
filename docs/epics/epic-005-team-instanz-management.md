@@ -2,9 +2,13 @@
 
 **Epic Goal:** User kann Team-Instanzen erstellen, starten, stoppen und pausieren; Instanzen werden persistent gespeichert
 
+**Status:** ✅ COMPLETED
+
 ---
 
-## Story 5.1: TeamInstance Database Model
+## Story 5.1: TeamInstance Database Model ✅
+
+**Status:** completed
 
 Als Entwickler,
 möchte ich ein vollständiges TeamInstance-Model,
@@ -54,9 +58,19 @@ class TeamInstance(Base):
 
 **Prerequisites:** Story 1.3
 
+**Implementation Notes (2025-12-06):**
+- ✅ `src/db/models.py` enthält vollständiges TeamInstance-Model
+- ✅ Alembic-Migration `20251206_0002_team_instance_full_schema.py` erstellt Tabellen
+- ✅ Status-Enum (active, paused, stopped) und Mode-Enum (paper, live)
+- ✅ JSON-Feld für symbols, Decimal für Budget/P/L
+- ✅ Relationships zu Trade und AgentDecisionLog
+- ✅ Indizes auf status und created_at
+
 ---
 
-## Story 5.2: Team-Repository mit CRUD-Operations
+## Story 5.2: Team-Repository mit CRUD-Operations ✅
+
+**Status:** completed
 
 Als Entwickler,
 möchte ich ein Repository für Team-Instanzen,
@@ -101,9 +115,18 @@ class TeamRepository:
 
 **Prerequisites:** Story 5.1
 
+**Implementation Notes (2025-12-06):**
+- ✅ `src/db/repositories/team_repo.py` vollständig implementiert
+- ✅ Alle CRUD-Methoden: create, get_by_id, get_all, update_status, update_budget, delete
+- ✅ Zusätzliche Methode: update_pnl, get_active_teams
+- ✅ Strukturiertes Logging bei allen Operationen
+- ✅ Async SQLAlchemy 2.0 Style
+
 ---
 
-## Story 5.3: Teams REST-API Endpoints
+## Story 5.3: Teams REST-API Endpoints ✅
+
+**Status:** completed
 
 Als Operator,
 möchte ich REST-Endpoints für Team-Management,
@@ -169,9 +192,23 @@ class TeamResponse(BaseModel):
 
 **Prerequisites:** Story 5.2
 
+**Implementation Notes (2025-12-06):**
+- ✅ `src/api/routes/teams.py` mit allen Endpoints
+- ✅ POST `/api/teams/` - Team erstellen
+- ✅ GET `/api/teams/` - Teams auflisten (mit status-Filter)
+- ✅ GET `/api/teams/{team_id}` - Team-Details inkl. trade_count, open_positions
+- ✅ PATCH `/api/teams/{team_id}/start` - Team starten
+- ✅ PATCH `/api/teams/{team_id}/pause` - Team pausieren
+- ✅ PATCH `/api/teams/{team_id}/stop` - Team stoppen
+- ✅ POST `/api/teams/{team_id}/positions/close` - Positionen schließen
+- ✅ DELETE `/api/teams/{team_id}` - Team löschen
+- ✅ `src/api/schemas/team.py` mit Request/Response-Models
+
 ---
 
-## Story 5.4: Team-Lifecycle-Manager
+## Story 5.4: Team-Lifecycle-Manager ✅
+
+**Status:** completed
 
 Als Entwickler,
 möchte ich einen Lifecycle-Manager für Teams,
@@ -230,6 +267,18 @@ class TeamLifecycleManager:
 - Graceful Shutdown bei Server-Stop
 
 **Prerequisites:** Story 3.5, 5.3
+
+**Implementation Notes (2025-12-06):**
+- ✅ `src/services/team_lifecycle.py` vollständig implementiert
+- ✅ TeamLifecycleManager mit allen Methoden: start_team, pause_team, stop_team, resume_team
+- ✅ In-Memory-Tracking von Orchestrators und Tasks (_orchestrators, _tasks)
+- ✅ Template-Validierung bei Start (existiert, valide)
+- ✅ Budget- und Symbol-Validierung
+- ✅ Trading-Loop mit konfigurierbarem Intervall
+- ✅ startup() für Auto-Start bei App-Start
+- ✅ shutdown() für Graceful-Shutdown
+- ✅ _close_all_positions() automatisch beim Stoppen
+- ✅ get_running_teams() und get_orchestrator()
 
 ---
 
