@@ -2,7 +2,7 @@
 epic: 008
 story: 02
 title: "Trade-Historie mit Sortierung und Filterung"
-status: backlog
+status: completed
 story_points: 3
 covers: [FR41]
 ---
