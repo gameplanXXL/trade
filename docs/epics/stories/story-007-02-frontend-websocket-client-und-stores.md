@@ -2,7 +2,7 @@
 epic: 007
 story: 02
 title: "Frontend WebSocket-Client und Stores"
-status: backlog
+status: done
 story_points: 3
 covers: [FR39]
 ---
