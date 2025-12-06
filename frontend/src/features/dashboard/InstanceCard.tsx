@@ -5,6 +5,7 @@ import type { Team } from '@/types'
 import { PnLDisplay } from './PnLDisplay'
 import { MetricsRow } from './MetricsRow'
 import { QuickActions } from './QuickActions'
+import { useNavigate } from 'react-router-dom'
 
 interface InstanceCardProps {
   team: Team
@@ -60,12 +61,21 @@ function getStatusColor(pnlPercent: number): string {
  * - Quick actions for details, pause, close
  */
 export function InstanceCard({ team, totalBudget, onAction }: InstanceCardProps) {
+  const navigate = useNavigate()
   const currentBudget = team.current_budget ?? team.budget
   const sizeClass = calculateSizeClass(currentBudget, totalBudget)
   const statusColor = getStatusColor(team.pnl_percent)
 
   // Determine mode from is_paper_trading if mode is not set
   const mode = team.mode ?? (team.is_paper_trading ? 'paper' : 'live')
+
+  const handleAction = (action: 'details' | 'pause' | 'close') => {
+    if (action === 'details') {
+      navigate(`/teams/${team.id}`)
+    } else {
+      onAction(action)
+    }
+  }
 
   return (
     <Card
@@ -106,7 +116,7 @@ export function InstanceCard({ team, totalBudget, onAction }: InstanceCardProps)
       </CardContent>
 
       <CardFooter>
-        <QuickActions onAction={onAction} />
+        <QuickActions onAction={handleAction} />
       </CardFooter>
     </Card>
   )
