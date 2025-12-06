@@ -25,3 +25,19 @@ class PerformanceSummary(BaseModel):
     total_trades: int = Field(..., description="Total number of trades")
     winning_trades: int = Field(..., description="Number of profitable trades")
     losing_trades: int = Field(..., description="Number of losing trades")
+
+
+class ActivitySummary(BaseModel):
+    """Activity summary for agent decisions.
+
+    Provides overview of all agent activities including signals, warnings,
+    rejections, and overrides for a team instance.
+    """
+
+    total_signals: int = Field(..., description="Total number of trading signals")
+    buy_signals: int = Field(..., description="Number of BUY signals")
+    sell_signals: int = Field(..., description="Number of SELL signals")
+    hold_signals: int = Field(..., description="Number of HOLD signals")
+    warnings: int = Field(..., description="Number of warning decisions")
+    rejections: int = Field(..., description="Number of rejected decisions")
+    overrides: int = Field(..., description="Number of override decisions")

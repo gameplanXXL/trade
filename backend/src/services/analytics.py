@@ -8,9 +8,9 @@ import structlog
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.schemas.analytics import PerformanceSummary
+from src.api.schemas.analytics import ActivitySummary, PerformanceSummary
 from src.core.exceptions import TeamNotFoundError
-from src.db.models import PerformanceMetric, TeamInstance, Trade
+from src.db.models import AgentDecisionLog, PerformanceMetric, TeamInstance, Trade
 
 log = structlog.get_logger()
 
@@ -502,3 +502,159 @@ class AnalyticsService:
         )
 
         return metric
+
+    async def get_agent_activity(
+        self,
+        team_id: int,
+        agent_name: str | None = None,
+        decision_type: str | None = None,
+        since: datetime | None = None,
+    ) -> list[AgentDecisionLog]:
+        """Filter agent decisions by team, agent name, decision type, and time.
+
+        Args:
+            team_id: Team instance ID
+            agent_name: Optional filter by agent name
+            decision_type: Optional filter by decision type (e.g., 'SIGNAL', 'WARNING')
+            since: Optional filter for decisions after this timestamp
+
+        Returns:
+            List of AgentDecisionLog instances matching the filters
+
+        Raises:
+            TeamNotFoundError: If team instance not found
+        """
+        # Verify team exists
+        await self._get_team_instance(team_id)
+
+        log.info(
+            "fetching_agent_activity",
+            team_id=team_id,
+            agent_name=agent_name,
+            decision_type=decision_type,
+            since=since,
+        )
+
+        # Build query with filters
+        stmt = (
+            select(AgentDecisionLog)
+            .where(AgentDecisionLog.team_instance_id == team_id)
+            .order_by(AgentDecisionLog.created_at.desc())
+        )
+
+        if agent_name:
+            stmt = stmt.where(AgentDecisionLog.agent_name == agent_name)
+
+        if decision_type:
+            stmt = stmt.where(AgentDecisionLog.decision_type == decision_type)
+
+        if since:
+            stmt = stmt.where(AgentDecisionLog.created_at >= since)
+
+        result = await self.session.execute(stmt)
+        decisions = list(result.scalars().all())
+
+        log.info(
+            "agent_activity_fetched",
+            team_id=team_id,
+            agent_name=agent_name,
+            decision_type=decision_type,
+            count=len(decisions),
+        )
+
+        return decisions
+
+    async def get_activity_summary(self, team_id: int) -> ActivitySummary:
+        """Get summary of agent activities for a team instance.
+
+        Aggregates all agent decisions by type to provide overview of
+        trading signals, warnings, rejections, and overrides.
+
+        Args:
+            team_id: Team instance ID
+
+        Returns:
+            ActivitySummary with aggregated counts
+
+        Raises:
+            TeamNotFoundError: If team instance not found
+        """
+        # Verify team exists
+        await self._get_team_instance(team_id)
+
+        log.info("calculating_activity_summary", team_id=team_id)
+
+        # Count signals by type (BUY, SELL, HOLD)
+        signal_stmt = (
+            select(
+                AgentDecisionLog.data["action"].as_string().label("action"),
+                func.count(AgentDecisionLog.id).label("count"),
+            )
+            .where(AgentDecisionLog.team_instance_id == team_id)
+            .where(AgentDecisionLog.decision_type == "SIGNAL")
+            .group_by(AgentDecisionLog.data["action"].as_string())
+        )
+
+        signal_result = await self.session.execute(signal_stmt)
+        signal_rows = signal_result.all()
+
+        buy_signals = 0
+        sell_signals = 0
+        hold_signals = 0
+
+        for action, count in signal_rows:
+            if action == "BUY":
+                buy_signals = count
+            elif action == "SELL":
+                sell_signals = count
+            elif action == "HOLD":
+                hold_signals = count
+
+        total_signals = buy_signals + sell_signals + hold_signals
+
+        # Count warnings, rejections, overrides
+        counts_stmt = (
+            select(
+                func.count(AgentDecisionLog.id)
+                .filter(AgentDecisionLog.decision_type == "WARNING")
+                .label("warnings"),
+                func.count(AgentDecisionLog.id)
+                .filter(AgentDecisionLog.decision_type == "REJECTION")
+                .label("rejections"),
+                func.count(AgentDecisionLog.id)
+                .filter(AgentDecisionLog.decision_type == "OVERRIDE")
+                .label("overrides"),
+            ).where(AgentDecisionLog.team_instance_id == team_id)
+        )
+
+        counts_result = await self.session.execute(counts_stmt)
+        counts_row = counts_result.one_or_none()
+
+        if counts_row:
+            warnings, rejections, overrides = counts_row
+        else:
+            warnings, rejections, overrides = 0, 0, 0
+
+        summary = ActivitySummary(
+            total_signals=total_signals,
+            buy_signals=buy_signals,
+            sell_signals=sell_signals,
+            hold_signals=hold_signals,
+            warnings=warnings or 0,
+            rejections=rejections or 0,
+            overrides=overrides or 0,
+        )
+
+        log.info(
+            "activity_summary_calculated",
+            team_id=team_id,
+            total_signals=total_signals,
+            buy_signals=buy_signals,
+            sell_signals=sell_signals,
+            hold_signals=hold_signals,
+            warnings=warnings,
+            rejections=rejections,
+            overrides=overrides,
+        )
+
+        return summary

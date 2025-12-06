@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.api.schemas.analytics import PerformanceSummary
+from src.api.schemas.analytics import ActivitySummary, PerformanceSummary
 from src.core.exceptions import TeamNotFoundError
-from src.db.models import PerformanceMetric, TeamInstance, Trade
+from src.db.models import AgentDecisionLog, PerformanceMetric, TeamInstance, Trade
 from src.services.analytics import AnalyticsService
 
 
@@ -670,3 +670,356 @@ class TestGetLatestMetric:
 
         with pytest.raises(TeamNotFoundError):
             await analytics_service.get_latest_metric(999, period="hourly")
+
+
+class TestGetAgentActivity:
+    """Tests for get_agent_activity method."""
+
+    async def test_get_agent_activity_all_decisions(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test getting all agent decisions for a team."""
+        # Mock team instance check
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        # Mock agent decisions
+        decisions = [
+            MagicMock(spec=AgentDecisionLog),
+            MagicMock(spec=AgentDecisionLog),
+            MagicMock(spec=AgentDecisionLog),
+        ]
+        for i, decision in enumerate(decisions):
+            decision.id = i + 1
+            decision.team_instance_id = 1
+            decision.agent_name = "MarketAnalyzer" if i < 2 else "RiskManager"
+            decision.decision_type = "SIGNAL"
+            decision.data = {"action": "BUY"}
+            decision.created_at = datetime.now(UTC)
+
+        activity_result = MagicMock()
+        activity_result.scalars.return_value.all.return_value = decisions
+
+        mock_session.execute.side_effect = [team_result, activity_result]
+
+        activity = await analytics_service.get_agent_activity(1)
+
+        assert len(activity) == 3
+        assert all(isinstance(d, AgentDecisionLog) for d in activity)
+
+    async def test_get_agent_activity_filter_by_agent_name(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test filtering agent decisions by agent name."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        decision = MagicMock(spec=AgentDecisionLog)
+        decision.id = 1
+        decision.team_instance_id = 1
+        decision.agent_name = "RiskManager"
+        decision.decision_type = "WARNING"
+        decision.data = {"reason": "High volatility"}
+
+        activity_result = MagicMock()
+        activity_result.scalars.return_value.all.return_value = [decision]
+
+        mock_session.execute.side_effect = [team_result, activity_result]
+
+        activity = await analytics_service.get_agent_activity(
+            1, agent_name="RiskManager"
+        )
+
+        assert len(activity) == 1
+        assert activity[0].agent_name == "RiskManager"
+
+    async def test_get_agent_activity_filter_by_decision_type(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test filtering agent decisions by decision type."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        decisions = [
+            MagicMock(spec=AgentDecisionLog),
+            MagicMock(spec=AgentDecisionLog),
+        ]
+        for i, decision in enumerate(decisions):
+            decision.id = i + 1
+            decision.team_instance_id = 1
+            decision.agent_name = "MarketAnalyzer"
+            decision.decision_type = "SIGNAL"
+            decision.data = {"action": "BUY"}
+
+        activity_result = MagicMock()
+        activity_result.scalars.return_value.all.return_value = decisions
+
+        mock_session.execute.side_effect = [team_result, activity_result]
+
+        activity = await analytics_service.get_agent_activity(
+            1, decision_type="SIGNAL"
+        )
+
+        assert len(activity) == 2
+        assert all(d.decision_type == "SIGNAL" for d in activity)
+
+    async def test_get_agent_activity_filter_by_time(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test filtering agent decisions by time."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        decision = MagicMock(spec=AgentDecisionLog)
+        decision.id = 1
+        decision.team_instance_id = 1
+        decision.agent_name = "MarketAnalyzer"
+        decision.decision_type = "SIGNAL"
+        decision.created_at = datetime.now(UTC)
+
+        activity_result = MagicMock()
+        activity_result.scalars.return_value.all.return_value = [decision]
+
+        mock_session.execute.side_effect = [team_result, activity_result]
+
+        since = datetime.now(UTC) - timedelta(hours=1)
+        activity = await analytics_service.get_agent_activity(1, since=since)
+
+        assert len(activity) == 1
+
+    async def test_get_agent_activity_combined_filters(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test combining multiple filters."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        activity_result = MagicMock()
+        activity_result.scalars.return_value.all.return_value = []
+
+        mock_session.execute.side_effect = [team_result, activity_result]
+
+        since = datetime.now(UTC) - timedelta(hours=1)
+        activity = await analytics_service.get_agent_activity(
+            1,
+            agent_name="RiskManager",
+            decision_type="WARNING",
+            since=since,
+        )
+
+        assert activity == []
+
+    async def test_get_agent_activity_team_not_found(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+    ) -> None:
+        """Test getting agent activity for non-existent team raises error."""
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_session.execute.return_value = mock_result
+
+        with pytest.raises(TeamNotFoundError):
+            await analytics_service.get_agent_activity(999)
+
+    async def test_get_agent_activity_empty_result(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test getting agent activity with no matching decisions."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        activity_result = MagicMock()
+        activity_result.scalars.return_value.all.return_value = []
+
+        mock_session.execute.side_effect = [team_result, activity_result]
+
+        activity = await analytics_service.get_agent_activity(1)
+
+        assert activity == []
+
+
+class TestGetActivitySummary:
+    """Tests for get_activity_summary method."""
+
+    async def test_get_activity_summary(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test getting complete activity summary."""
+        # Mock team instance check
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        # Mock signal counts (BUY, SELL, HOLD)
+        signal_result = MagicMock()
+        signal_result.all.return_value = [
+            ("BUY", 10),
+            ("SELL", 5),
+            ("HOLD", 3),
+        ]
+
+        # Mock warning/rejection/override counts
+        counts_result = MagicMock()
+        counts_result.one_or_none.return_value = (2, 1, 3)  # warnings, rejections, overrides
+
+        mock_session.execute.side_effect = [team_result, signal_result, counts_result]
+
+        summary = await analytics_service.get_activity_summary(1)
+
+        assert isinstance(summary, ActivitySummary)
+        assert summary.total_signals == 18  # 10 + 5 + 3
+        assert summary.buy_signals == 10
+        assert summary.sell_signals == 5
+        assert summary.hold_signals == 3
+        assert summary.warnings == 2
+        assert summary.rejections == 1
+        assert summary.overrides == 3
+
+    async def test_get_activity_summary_only_buy_signals(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test activity summary with only BUY signals."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        signal_result = MagicMock()
+        signal_result.all.return_value = [("BUY", 15)]
+
+        counts_result = MagicMock()
+        counts_result.one_or_none.return_value = (0, 0, 0)
+
+        mock_session.execute.side_effect = [team_result, signal_result, counts_result]
+
+        summary = await analytics_service.get_activity_summary(1)
+
+        assert summary.total_signals == 15
+        assert summary.buy_signals == 15
+        assert summary.sell_signals == 0
+        assert summary.hold_signals == 0
+        assert summary.warnings == 0
+        assert summary.rejections == 0
+        assert summary.overrides == 0
+
+    async def test_get_activity_summary_no_signals(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test activity summary with no signals but some warnings."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        signal_result = MagicMock()
+        signal_result.all.return_value = []
+
+        counts_result = MagicMock()
+        counts_result.one_or_none.return_value = (5, 2, 1)
+
+        mock_session.execute.side_effect = [team_result, signal_result, counts_result]
+
+        summary = await analytics_service.get_activity_summary(1)
+
+        assert summary.total_signals == 0
+        assert summary.buy_signals == 0
+        assert summary.sell_signals == 0
+        assert summary.hold_signals == 0
+        assert summary.warnings == 5
+        assert summary.rejections == 2
+        assert summary.overrides == 1
+
+    async def test_get_activity_summary_no_activity(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test activity summary with no decisions at all."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        signal_result = MagicMock()
+        signal_result.all.return_value = []
+
+        counts_result = MagicMock()
+        counts_result.one_or_none.return_value = None
+
+        mock_session.execute.side_effect = [team_result, signal_result, counts_result]
+
+        summary = await analytics_service.get_activity_summary(1)
+
+        assert summary.total_signals == 0
+        assert summary.buy_signals == 0
+        assert summary.sell_signals == 0
+        assert summary.hold_signals == 0
+        assert summary.warnings == 0
+        assert summary.rejections == 0
+        assert summary.overrides == 0
+
+    async def test_get_activity_summary_mixed_signals(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+        mock_team_instance: TeamInstance,
+    ) -> None:
+        """Test activity summary with mixed signal types."""
+        team_result = MagicMock()
+        team_result.scalar_one_or_none.return_value = mock_team_instance
+
+        signal_result = MagicMock()
+        signal_result.all.return_value = [
+            ("BUY", 7),
+            ("SELL", 7),
+        ]
+
+        counts_result = MagicMock()
+        counts_result.one_or_none.return_value = (3, 1, 0)
+
+        mock_session.execute.side_effect = [team_result, signal_result, counts_result]
+
+        summary = await analytics_service.get_activity_summary(1)
+
+        assert summary.total_signals == 14
+        assert summary.buy_signals == 7
+        assert summary.sell_signals == 7
+        assert summary.hold_signals == 0
+        assert summary.warnings == 3
+        assert summary.rejections == 1
+        assert summary.overrides == 0
+
+    async def test_get_activity_summary_team_not_found(
+        self,
+        analytics_service: AnalyticsService,
+        mock_session: AsyncMock,
+    ) -> None:
+        """Test getting activity summary for non-existent team raises error."""
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_session.execute.return_value = mock_result
+
+        with pytest.raises(TeamNotFoundError):
+            await analytics_service.get_activity_summary(999)
