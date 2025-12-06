@@ -2,7 +2,7 @@
 epic: 003
 story: 01
 title: "Pipeline-Executor implementieren"
-status: Ready for Review
+status: completed
 story_points: 5
 covers: [FR17, FR22]
 ---

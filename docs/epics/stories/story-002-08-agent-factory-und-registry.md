@@ -2,7 +2,7 @@
 epic: 002
 story: 08
 title: "Agent-Factory und Registry"
-status: backlog
+status: completed
 story_points: 2
 covers: [FR16]
 ---

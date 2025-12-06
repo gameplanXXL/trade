@@ -2,7 +2,7 @@
 epic: 003
 story: 02
 title: "Override-Rule-Engine implementieren"
-status: Ready for Review
+status: completed
 story_points: 5
 covers: [FR18, FR20, FR21]
 ---

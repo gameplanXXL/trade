@@ -2,7 +2,7 @@
 epic: 003
 story: 04
 title: "Decision-Audit-Log implementieren"
-status: Ready for Review
+status: completed
 story_points: 3
 ---
 

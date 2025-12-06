@@ -2,7 +2,7 @@
 epic: 003
 story: 03
 title: "Agent-Status-Management (NORMAL/WARNING/CRASH)"
-status: Ready for Review
+status: completed
 story_points: 2
 covers: [FR19, FR20, FR21]
 ---

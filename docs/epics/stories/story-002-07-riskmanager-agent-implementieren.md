@@ -2,7 +2,7 @@
 epic: 002
 story: 07
 title: "RiskManager Agent implementieren"
-status: backlog
+status: completed
 story_points: 3
 covers: [FR15, FR16, FR22]
 ---

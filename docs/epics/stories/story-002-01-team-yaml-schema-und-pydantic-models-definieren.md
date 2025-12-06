@@ -2,7 +2,7 @@
 epic: 002
 story: 01
 title: "Team-YAML-Schema und Pydantic Models definieren"
-status: backlog
+status: completed
 story_points: 3
 covers: [FR1, FR2, FR3, FR4]
 ---

@@ -2,7 +2,7 @@
 epic: 002
 story: 05
 title: "LLMSignalAnalyst Agent implementieren"
-status: backlog
+status: completed
 story_points: 5
 covers: [FR13, FR16]
 ---

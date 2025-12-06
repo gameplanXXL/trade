@@ -2,7 +2,7 @@
 epic: 002
 story: 02
 title: "YAML Team-Loader implementieren"
-status: backlog
+status: completed
 story_points: 3
 covers: [FR1, FR2, FR3, FR4, FR5]
 ---

@@ -2,7 +2,7 @@
 epic: 002
 story: 04
 title: "CrashDetector Agent implementieren"
-status: backlog
+status: completed
 story_points: 3
 covers: [FR12, FR16]
 ---

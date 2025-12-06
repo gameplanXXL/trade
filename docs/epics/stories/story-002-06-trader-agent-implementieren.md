@@ -2,7 +2,7 @@
 epic: 002
 story: 06
 title: "Trader Agent implementieren"
-status: backlog
+status: completed
 story_points: 3
 covers: [FR14, FR16]
 ---

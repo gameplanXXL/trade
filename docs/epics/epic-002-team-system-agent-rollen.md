@@ -2,9 +2,13 @@
 
 **Epic Goal:** User kann ein Team-Template laden und die Agent-Rollen sehen, die darin definiert sind
 
+**Status:** ✅ COMPLETED
+
 ---
 
-## Story 2.1: Team-YAML-Schema und Pydantic Models definieren
+## Story 2.1: Team-YAML-Schema und Pydantic Models definieren ✅
+
+**Status:** completed
 
 Als Entwickler,
 möchte ich Pydantic Models für Team-Konfigurationen,
@@ -58,7 +62,9 @@ class TeamTemplate(BaseModel):
 
 ---
 
-## Story 2.2: YAML Team-Loader implementieren
+## Story 2.2: YAML Team-Loader implementieren ✅
+
+**Status:** completed
 
 Als Entwickler,
 möchte ich einen YAML-Loader für Team-Templates,
@@ -141,7 +147,9 @@ override_rules:
 
 ---
 
-## Story 2.3: BaseAgent Abstract Class implementieren
+## Story 2.3: BaseAgent Abstract Class implementieren ✅
+
+**Status:** completed
 
 Als Entwickler,
 möchte ich eine abstrakte Basis-Klasse für alle Agenten,
@@ -200,7 +208,9 @@ class BaseAgent(ABC):
 
 ---
 
-## Story 2.4: CrashDetector Agent implementieren
+## Story 2.4: CrashDetector Agent implementieren ✅
+
+**Status:** completed
 
 Als Entwickler,
 möchte ich einen CrashDetector-Agenten,
@@ -243,7 +253,9 @@ class CrashDetector(BaseAgent):
 
 ---
 
-## Story 2.5: LLMSignalAnalyst Agent implementieren
+## Story 2.5: LLMSignalAnalyst Agent implementieren ✅
+
+**Status:** completed
 
 Als Entwickler,
 möchte ich einen LLM-basierten Signal-Analysten,
@@ -292,7 +304,9 @@ class LLMSignalAnalyst(BaseAgent):
 
 ---
 
-## Story 2.6: Trader Agent implementieren
+## Story 2.6: Trader Agent implementieren ✅
+
+**Status:** completed
 
 Als Entwickler,
 möchte ich einen Trader-Agenten,
@@ -346,7 +360,9 @@ class Trader(BaseAgent):
 
 ---
 
-## Story 2.7: RiskManager Agent implementieren
+## Story 2.7: RiskManager Agent implementieren ✅
+
+**Status:** completed
 
 Als Entwickler,
 möchte ich einen RiskManager-Agenten,
@@ -399,7 +415,9 @@ class RiskManager(BaseAgent):
 
 ---
 
-## Story 2.8: Agent-Factory und Registry
+## Story 2.8: Agent-Factory und Registry ✅
+
+**Status:** completed
 
 Als Entwickler,
 möchte ich eine Factory zum Erstellen von Agenten aus Config,

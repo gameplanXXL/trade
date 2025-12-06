@@ -2,7 +2,7 @@
 epic: 003
 story: 05
 title: "Team-Orchestrator mit LangGraph"
-status: Ready for Review
+status: completed
 story_points: 5
 covers: [FR17]
 ---

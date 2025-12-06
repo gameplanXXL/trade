@@ -2,7 +2,7 @@
 epic: 002
 story: 03
 title: "BaseAgent Abstract Class implementieren"
-status: backlog
+status: completed
 story_points: 3
 covers: [FR16]
 ---

@@ -2,6 +2,8 @@
 
 **Epic Goal:** User kann eine Team-Pipeline starten und sieht, wie Agenten sequenziell arbeiten; Override-Regeln greifen bei kritischen Situationen
 
+**Status:** ✅ COMPLETED
+
 ---
 
 ## Story 3.1: Pipeline-Executor implementieren
