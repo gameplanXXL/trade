@@ -138,7 +138,7 @@ export function useResumeTeam() {
 
       return { previousTeams, previousTeam }
     },
-    onError: (err, teamId, context) => {
+    onError: (_err, teamId, context) => {
       if (context?.previousTeams) {
         queryClient.setQueryData(['teams'], context.previousTeams)
       }
@@ -146,7 +146,7 @@ export function useResumeTeam() {
         queryClient.setQueryData(['team', teamId], context.previousTeam)
       }
     },
-    onSettled: (data, error, teamId) => {
+    onSettled: (_data, _error, teamId) => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['team', teamId] })
     },
@@ -205,7 +205,7 @@ export function useStopTeam() {
 
       return { previousTeams, previousTeam }
     },
-    onError: (err, teamId, context) => {
+    onError: (_err, teamId, context) => {
       if (context?.previousTeams) {
         queryClient.setQueryData(['teams'], context.previousTeams)
       }
@@ -213,7 +213,7 @@ export function useStopTeam() {
         queryClient.setQueryData(['team', teamId], context.previousTeam)
       }
     },
-    onSettled: (data, error, teamId) => {
+    onSettled: (_data, _error, teamId) => {
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['team', teamId] })
     },
@@ -245,7 +245,7 @@ export function useClosePositions() {
 
   return useMutation({
     mutationFn: closePositions,
-    onSuccess: (data, teamId) => {
+    onSuccess: (_data, teamId) => {
       // Invalidate team data to refetch updated positions
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['team', teamId] })

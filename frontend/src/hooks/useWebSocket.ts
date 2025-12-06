@@ -1,19 +1,21 @@
 import { useEffect, useCallback, useRef } from 'react'
 import { wsClient } from '@/lib/socket'
 import { useTeamStore } from '@/stores/teamStore'
+import { useAlertStore } from '@/stores/alertStore'
 import type { Alert, Trade, TeamStatusUpdate } from '@/types'
 
 /**
  * Custom hook to manage WebSocket connection and event subscriptions
  *
  * Automatically connects to WebSocket server and subscribes to real-time events.
- * Updates are synchronized with the Zustand team store.
+ * Updates are synchronized with the Zustand stores.
  *
  * @param autoConnect - Whether to auto-connect on mount (default: true)
  * @returns Object with connection status and manual control functions
  */
 export function useWebSocket(autoConnect = true) {
-  const { updateTeamStatus, addAlert } = useTeamStore()
+  const { updateTeamStatus } = useTeamStore()
+  const { addAlert } = useAlertStore()
   const isInitializedRef = useRef(false)
 
   // WebSocket event handlers

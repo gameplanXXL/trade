@@ -14,6 +14,7 @@ interface TeamGridProps {
  * Displays team instance cards with proportional sizing:
  * - Desktop: Auto-fit grid with proportional sizes based on budget
  * - Mobile: Stack (1 column)
+ * - Critical instances sorted to top
  */
 export function TeamGrid({ teams }: TeamGridProps) {
   // Calculate total budget for proportional sizing
@@ -22,6 +23,23 @@ export function TeamGrid({ teams }: TeamGridProps) {
       const budget = team.current_budget ?? team.budget
       return sum + budget
     }, 0)
+  }, [teams])
+
+  // Sort teams: critical status first, then by status severity
+  const sortedTeams = useMemo(() => {
+    const statusPriority = {
+      critical: 0,
+      warning: 1,
+      stopped: 2,
+      paused: 3,
+      active: 4,
+    }
+
+    return [...teams].sort((a, b) => {
+      const priorityA = statusPriority[a.status] ?? 999
+      const priorityB = statusPriority[b.status] ?? 999
+      return priorityA - priorityB
+    })
   }, [teams])
 
   // Handle team actions
@@ -57,7 +75,7 @@ export function TeamGrid({ teams }: TeamGridProps) {
 
       {/* Responsive Grid with proportional sizing */}
       <div className="grid auto-rows-fr grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {teams.map((team) => (
+        {sortedTeams.map((team) => (
           <InstanceCard
             key={team.id}
             team={team}

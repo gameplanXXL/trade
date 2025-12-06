@@ -4,6 +4,7 @@ import { TeamDetail } from '@/features/teams'
 import { TeamCreate } from '@/features/teams/TeamCreate'
 import { LoginForm } from '@/features/auth'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { Toaster } from '@/components/ui/toaster'
 
 function TeamDetailWrapper() {
   const { teamId } = useParams<{ teamId: string }>()
@@ -51,6 +52,7 @@ function App() {
           }
         />
       </Routes>
+      <Toaster />
     </BrowserRouter>
   )
 }

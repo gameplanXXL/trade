@@ -1,19 +1,15 @@
 import { create } from 'zustand'
-import type { Team, Alert, TeamStatusUpdate } from '../types'
+import type { Team, TeamStatusUpdate } from '../types'
 
 interface TeamStore {
   // State
   teams: Team[]
-  alerts: Alert[]
   isLoading: boolean
   error: string | null
 
   // Actions
   setTeams: (teams: Team[]) => void
   updateTeamStatus: (teamId: number, status: TeamStatusUpdate) => void
-  addAlert: (alert: Alert) => void
-  removeAlert: (alertId: string) => void
-  clearAlerts: () => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
 
@@ -24,7 +20,6 @@ interface TeamStore {
 export const useTeamStore = create<TeamStore>((set) => ({
   // Initial State
   teams: [],
-  alerts: [],
   isLoading: false,
   error: null,
 
@@ -45,18 +40,6 @@ export const useTeamStore = create<TeamStore>((set) => ({
           : team
       ),
     })),
-
-  addAlert: (alert) =>
-    set((state) => ({
-      alerts: [alert, ...state.alerts],
-    })),
-
-  removeAlert: (alertId) =>
-    set((state) => ({
-      alerts: state.alerts.filter((alert) => alert.id !== alertId),
-    })),
-
-  clearAlerts: () => set({ alerts: [] }),
 
   setLoading: (loading) => set({ isLoading: loading }),
 

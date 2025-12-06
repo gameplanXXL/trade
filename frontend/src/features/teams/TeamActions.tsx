@@ -168,10 +168,7 @@ export function TeamActions({ team, onComplete }: TeamActionsProps) {
             <DialogTitle>Alle Positionen schließen?</DialogTitle>
             <DialogDescription>
               {openPositionsCount > 0 ? (
-                <>
-                  {openPositionsCount} {openPositionsCount === 1 ? 'Position' : 'Positionen'} mit{' '}
-                  {formatCurrency(exposure)} Exposure werden geschlossen.
-                </>
+                `${openPositionsCount} ${openPositionsCount === 1 ? 'Position' : 'Positionen'} mit ${formatCurrency(exposure)} Exposure werden geschlossen.`
               ) : (
                 'Alle offenen Positionen dieses Teams werden geschlossen.'
               )}

@@ -13,7 +13,6 @@ interface AlertStore {
   getAlertHistory: () => Alert[]
 }
 
-const MAX_VISIBLE_ALERTS = 5
 const MAX_HISTORY_SIZE = 100
 
 export const useAlertStore = create<AlertStore>((set, get) => ({
