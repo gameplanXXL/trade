@@ -5,10 +5,12 @@ from enum import Enum
 from typing import Any
 
 import structlog
+from anthropic import APIStatusError, RateLimitError
 from langchain_anthropic import ChatAnthropic
 from pydantic import BaseModel, Field
 
 from src.agents.base import AgentDecision, AgentStatus, BaseAgent
+from src.agents.retry_utils import llm_retry_decorator
 from src.core.exceptions import TradingError
 
 log = structlog.get_logger()
@@ -146,11 +148,34 @@ class LLMSignalAnalyst(BaseAgent):
                 confidence=signal.confidence,
             )
 
-        except Exception as e:
+        except LLMAnalystError as e:
             log.error(
                 "signal_generation_failed",
                 agent_name=self.name,
                 error=str(e),
+                error_type=type(e).__name__,
+            )
+            self.status = AgentStatus.WARNING
+
+            # Fallback after all retries: HOLD signal with warning
+            return AgentDecision(
+                agent_name=self.name,
+                decision_type="warning",
+                data={
+                    "action": SignalAction.HOLD.value,
+                    "confidence": 0.0,
+                    "reasoning": f"LLM API failed after {self.max_retries} retries. Defaulting to HOLD for safety.",
+                    "error": str(e),
+                    "fallback": True,
+                },
+                confidence=0.0,
+            )
+        except Exception as e:
+            log.error(
+                "signal_generation_failed_unexpected",
+                agent_name=self.name,
+                error=str(e),
+                error_type=type(e).__name__,
             )
             self.status = AgentStatus.WARNING
 
@@ -160,7 +185,7 @@ class LLMSignalAnalyst(BaseAgent):
                 data={
                     "action": SignalAction.HOLD.value,
                     "confidence": 0.0,
-                    "reasoning": f"Signal generation failed: {e!s}",
+                    "reasoning": f"Unexpected error during signal generation: {e!s}",
                     "error": str(e),
                 },
                 confidence=0.0,
@@ -212,7 +237,7 @@ Respond ONLY with the JSON object, no additional text."""
         return prompt
 
     async def _call_llm_with_retry(self, prompt: str) -> str:
-        """Call LLM with retry logic.
+        """Call LLM with retry logic using tenacity.
 
         Args:
             prompt: The prompt to send to the LLM.
@@ -223,50 +248,46 @@ Respond ONLY with the JSON object, no additional text."""
         Raises:
             LLMAnalystError: If all retries fail.
         """
-        last_error: Exception | None = None
+        try:
+            return await self._invoke_llm(prompt)
+        except (RateLimitError, APIStatusError, TimeoutError) as e:
+            # After all retries exhausted, return fallback
+            log.error(
+                "llm_call_failed_all_retries",
+                agent_name=self.name,
+                error=str(e),
+                error_type=type(e).__name__,
+            )
+            raise LLMAnalystError(
+                f"LLM call failed after {self.max_retries} attempts: {e!s}",
+                details={"error_type": type(e).__name__},
+            ) from e
 
-        for attempt in range(self.max_retries):
-            try:
-                response = await asyncio.wait_for(
-                    self._invoke_llm(prompt),
-                    timeout=self.timeout,
-                )
-                return response
-            except TimeoutError:
-                last_error = TimeoutError(f"LLM call timed out after {self.timeout}s")
-                log.warning(
-                    "llm_call_timeout",
-                    attempt=attempt + 1,
-                    max_retries=self.max_retries,
-                )
-            except Exception as e:
-                last_error = e
-                log.warning(
-                    "llm_call_failed",
-                    attempt=attempt + 1,
-                    max_retries=self.max_retries,
-                    error=str(e),
-                )
-
-            # Wait before retry (exponential backoff)
-            if attempt < self.max_retries - 1:
-                await asyncio.sleep(2**attempt)
-
-        raise LLMAnalystError(
-            f"LLM call failed after {self.max_retries} attempts",
-            details={"last_error": str(last_error)},
-        )
-
+    @llm_retry_decorator()
     async def _invoke_llm(self, prompt: str) -> str:
-        """Invoke the LLM asynchronously.
+        """Invoke the LLM asynchronously with retry logic.
+
+        This method is decorated with @llm_retry_decorator which provides:
+        - 3 retry attempts
+        - Exponential backoff: 2s, 4s, 8s
+        - Retry on: RateLimitError (429), APIStatusError (5xx), TimeoutError
+        - Automatic logging of retry attempts
 
         Args:
             prompt: The prompt to send.
 
         Returns:
             LLM response text.
+
+        Raises:
+            RateLimitError: If rate limit exceeded after all retries.
+            APIStatusError: If server error persists after all retries.
+            TimeoutError: If timeout occurs on all retry attempts.
         """
-        response = await self.llm.ainvoke(prompt)
+        response = await asyncio.wait_for(
+            self.llm.ainvoke(prompt),
+            timeout=self.timeout,
+        )
         return str(response.content)
 
     def _parse_response(self, response: str) -> LLMSignalResponse:

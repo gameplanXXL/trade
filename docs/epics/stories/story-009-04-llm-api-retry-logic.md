@@ -2,7 +2,7 @@
 epic: 009
 story: 04
 title: "LLM-API Retry-Logic"
-status: backlog
+status: completed
 story_points: 2
 covers: [FR54]
 ---
