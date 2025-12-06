@@ -263,10 +263,12 @@ class TestStopTeam:
         # Mock _close_all_positions
         lifecycle_manager._close_all_positions = AsyncMock()
 
-        # Simulate running task
-        mock_task = AsyncMock()
-        mock_task.cancel = MagicMock()
-        lifecycle_manager._tasks[1] = mock_task
+        # Simulate running task - create real asyncio.Task
+        async def dummy_task():
+            await asyncio.sleep(10)
+
+        task = asyncio.create_task(dummy_task())
+        lifecycle_manager._tasks[1] = task
         lifecycle_manager._orchestrators[1] = MagicMock()
 
         # Execute
@@ -296,10 +298,12 @@ class TestStopTeam:
         # Mock _close_all_positions
         lifecycle_manager._close_all_positions = AsyncMock()
 
-        # Simulate running task
-        mock_task = AsyncMock()
-        mock_task.cancel = MagicMock()
-        lifecycle_manager._tasks[1] = mock_task
+        # Simulate running task - create real asyncio.Task
+        async def dummy_task():
+            await asyncio.sleep(10)
+
+        task = asyncio.create_task(dummy_task())
+        lifecycle_manager._tasks[1] = task
         lifecycle_manager._orchestrators[1] = MagicMock()
 
         # Execute
