@@ -113,7 +113,7 @@ export function TeamActions({ team, onComplete }: TeamActionsProps) {
   }
 
   // TODO: Get actual open positions count from team data
-  const openPositionsCount = 0
+  const openPositionsCount = 0 as number
   const exposure = team.budget - (team.current_budget ?? team.budget) // Estimated exposure
 
   return (
