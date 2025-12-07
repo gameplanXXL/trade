@@ -11,6 +11,7 @@ from src.api.deps import DbDep
 from src.api.schemas.team import (
     TeamCreate,
     TeamDetailResponse,
+    TeamDetailWrapper,
     TeamInstanceCreate,
     TeamListResponse,
     TeamResponse,
@@ -67,8 +68,8 @@ async def list_teams(
     }
 
 
-@router.get("/{team_id}", response_model=TeamDetailResponse)
-async def get_team(team_id: int, repo: TeamRepoDep, db: DbDep) -> TeamDetailResponse:
+@router.get("/{team_id}", response_model=TeamDetailWrapper)
+async def get_team(team_id: int, repo: TeamRepoDep, db: DbDep) -> dict[str, Any]:
     """Get detailed information about a team instance.
 
     Includes trade count and open position count.
@@ -94,9 +95,14 @@ async def get_team(team_id: int, repo: TeamRepoDep, db: DbDep) -> TeamDetailResp
     )
     open_positions = open_positions_result.scalar() or 0
 
-    return TeamDetailResponse.from_team(
+    team_detail = TeamDetailResponse.from_team(
         team, trade_count=trade_count, open_positions=open_positions
     )
+
+    return {
+        "data": team_detail,
+        "meta": {"timestamp": datetime.now(UTC).isoformat()},
+    }
 
 
 @router.patch("/{team_id}/start", response_model=TeamResponse)

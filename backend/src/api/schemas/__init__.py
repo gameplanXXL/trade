@@ -4,6 +4,7 @@ from src.api.schemas.analytics import PerformanceSummary
 from src.api.schemas.team import (
     TeamCreate,
     TeamDetailResponse,
+    TeamDetailWrapper,
     TeamListResponse,
     TeamResponse,
 )
@@ -13,5 +14,6 @@ __all__ = [
     "TeamCreate",
     "TeamResponse",
     "TeamDetailResponse",
+    "TeamDetailWrapper",
     "TeamListResponse",
 ]

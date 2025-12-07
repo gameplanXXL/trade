@@ -146,6 +146,15 @@ class TeamListResponse(BaseModel):
     )
 
 
+class TeamDetailWrapper(BaseModel):
+    """Wrapper response for single team detail with metadata."""
+
+    data: TeamDetailResponse
+    meta: dict[str, Any] = Field(
+        default_factory=lambda: {"timestamp": datetime.utcnow().isoformat() + "Z"}
+    )
+
+
 class ErrorResponse(BaseModel):
     """Standard error response schema."""
 
