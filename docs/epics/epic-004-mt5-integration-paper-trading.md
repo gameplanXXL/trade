@@ -1,6 +1,8 @@
-# Epic 4: MT5-Integration & Paper Trading
+# Epic 4: MT5-Integration & Paper Trading ✅ COMPLETED
 
 **Epic Goal:** User kann sich mit MT5 verbinden, Kursdaten empfangen und simulierte Trades im Paper-Modus ausführen
+
+**Status:** 5/5 Stories done (100%)
 
 ---
 

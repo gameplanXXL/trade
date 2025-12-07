@@ -173,6 +173,11 @@ class Trade(Base):
         Numeric(precision=18, scale=6), nullable=True
     )
 
+    # Trailing stop configuration (M4 fix: persist for restart recovery)
+    trailing_stop_pct: Mapped[Decimal | None] = mapped_column(
+        Numeric(precision=5, scale=2), nullable=True
+    )
+
     # P/L
     pnl: Mapped[Decimal | None] = mapped_column(Numeric(precision=18, scale=2), nullable=True)
     spread_cost: Mapped[Decimal] = mapped_column(

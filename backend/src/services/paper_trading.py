@@ -1,9 +1,12 @@
 """Paper Trading Engine for simulated trading without real money."""
 
+from __future__ import annotations
+
 import asyncio
 from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import TYPE_CHECKING
 
 import structlog
 from pydantic import BaseModel, Field
@@ -11,6 +14,9 @@ from pydantic import BaseModel, Field
 from src.core.exceptions import TradingError
 from src.mt5.market_data import MarketDataFeed, canonicalize_symbol
 from src.mt5.orders import OrderRequest, OrderResult, OrderSide, OrderStatus, OrderType
+
+if TYPE_CHECKING:
+    from src.services.budget_manager import BudgetManager
 
 log = structlog.get_logger()
 
@@ -90,6 +96,8 @@ class PaperTradingEngine:
     - Spread-based execution
     - Trailing stop loss
     - Position updates with current prices
+
+    H2 fix: Optional BudgetManager integration for DB persistence.
     """
 
     def __init__(
@@ -97,6 +105,7 @@ class PaperTradingEngine:
         market_data: MarketDataFeed,
         default_spread_pips: Decimal = Decimal("2"),
         update_interval: float = 5.0,
+        budget_manager: BudgetManager | None = None,
     ) -> None:
         """Initialize Paper Trading Engine.
 
@@ -104,14 +113,18 @@ class PaperTradingEngine:
             market_data: Market data feed for price updates
             default_spread_pips: Default spread in pips if not from market
             update_interval: Position update interval in seconds
+            budget_manager: Optional BudgetManager for DB persistence (H2 fix)
         """
         self.market_data = market_data
         self.default_spread_pips = default_spread_pips
         self.update_interval = update_interval
+        self.budget_manager = budget_manager
         self.positions: dict[int, PaperPosition] = {}
         self._ticket_counter = 0
         self._update_task: asyncio.Task | None = None
         self._running = False
+        # Track trade IDs for positions (ticket -> trade.id mapping)
+        self._trade_ids: dict[int, int] = {}
 
     async def execute_order(
         self,
@@ -137,10 +150,20 @@ class PaperTradingEngine:
         # Get current price
         price = await self._get_price(canonical_symbol)
 
-        # Calculate fill price with spread
-        spread = price.spread if price.spread > 0 else self._pips_to_price(
-            self.default_spread_pips, canonical_symbol
-        )
+        # M3 fix: Clarified spread strategy
+        # Priority: 1) Use spread from market data if available and valid
+        #           2) Fall back to default_spread_pips converted to price
+        # This ensures realistic simulation even when market data doesn't provide spread
+        if price.spread and price.spread > 0:
+            spread = price.spread
+        else:
+            spread = self._pips_to_price(self.default_spread_pips, canonical_symbol)
+            log.debug(
+                "paper_trading_using_default_spread",
+                symbol=canonical_symbol,
+                spread_pips=str(self.default_spread_pips),
+                spread_price=str(spread),
+            )
 
         if order.order_type == OrderType.MARKET_BUY:
             fill_price = price.ask  # Buy at ask
@@ -188,6 +211,36 @@ class PaperTradingEngine:
         )
 
         self.positions[ticket] = position
+
+        # H2 fix: Persist trade to database if BudgetManager is available
+        if self.budget_manager and team_instance_id:
+            try:
+                trade = await self.budget_manager.record_trade_open(
+                    team_instance_id=team_instance_id,
+                    ticket=ticket,
+                    symbol=canonical_symbol,
+                    side=order.side.value,
+                    size=order.volume,
+                    entry_price=fill_price,
+                    stop_loss=stop_loss,
+                    take_profit=order.take_profit,
+                    spread_cost=spread_cost,
+                    magic_number=order.magic_number,
+                    comment=f"Paper trade via PaperTradingEngine",
+                )
+                self._trade_ids[ticket] = trade.id
+                log.info(
+                    "paper_trade_persisted",
+                    ticket=ticket,
+                    trade_id=trade.id,
+                    team_instance_id=team_instance_id,
+                )
+            except Exception as e:
+                log.warning(
+                    "paper_trade_persist_failed",
+                    ticket=ticket,
+                    error=str(e),
+                )
 
         log.info(
             "paper_order_executed",
@@ -437,12 +490,38 @@ class PaperTradingEngine:
         position: PaperPosition,
         close_price: Decimal,
     ) -> None:
-        """Internal method to close a position."""
+        """Internal method to close a position.
+
+        H2 fix: Also updates trade in database via BudgetManager.
+        """
         position.current_price = close_price
         position.realized_pnl = position.calculate_pnl(close_price) - position.spread_cost
         position.unrealized_pnl = Decimal("0")
         position.is_open = False
         position.closed_at = datetime.now(UTC)
+
+        # H2 fix: Persist trade close to database if BudgetManager is available
+        if self.budget_manager and position.ticket in self._trade_ids:
+            try:
+                trade_id = self._trade_ids[position.ticket]
+                await self.budget_manager.record_trade_close(
+                    trade_id=trade_id,
+                    exit_price=close_price,
+                    pnl=position.realized_pnl,
+                )
+                del self._trade_ids[position.ticket]
+                log.info(
+                    "paper_trade_close_persisted",
+                    ticket=position.ticket,
+                    trade_id=trade_id,
+                    pnl=str(position.realized_pnl),
+                )
+            except Exception as e:
+                log.warning(
+                    "paper_trade_close_persist_failed",
+                    ticket=position.ticket,
+                    error=str(e),
+                )
 
     async def _get_price(self, symbol: str):
         """Get current price from market data."""

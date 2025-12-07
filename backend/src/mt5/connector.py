@@ -55,10 +55,20 @@ class MT5Connector:
         """
         self.settings = settings
         self._connected = False
-        self._backend = backend or MockMT5Backend()
         self._reconnect_task: asyncio.Task | None = None
         self._health_check_task: asyncio.Task | None = None
         self._shutdown_event = asyncio.Event()
+
+        # M1 fix: Warn if using MockMT5Backend (default)
+        if backend is None:
+            self._backend = MockMT5Backend()
+            log.warning(
+                "mt5_using_mock_backend",
+                message="Using MockMT5Backend - NOT suitable for production trading!",
+                hint="Provide a real MT5Backend implementation for live trading.",
+            )
+        else:
+            self._backend = backend
 
     async def connect(self) -> bool:
         """Connect to MT5.
@@ -227,21 +237,46 @@ class MT5Connector:
         log.info("mt5_health_check_started", interval_seconds=interval_seconds)
 
     async def _health_check_loop(self, interval_seconds: int) -> None:
-        """Internal health check loop."""
+        """Internal health check loop.
+
+        H3 fix: Track consecutive reconnect failures and implement backoff.
+        """
+        consecutive_failures = 0
+        max_consecutive_failures = 5
+        backoff_multiplier = 2
+
         while not self._shutdown_event.is_set():
             try:
-                await asyncio.sleep(interval_seconds)
+                # Apply backoff if we had failures
+                effective_interval = interval_seconds * (backoff_multiplier ** min(consecutive_failures, 3))
+                await asyncio.sleep(effective_interval)
 
                 if self._shutdown_event.is_set():
                     break
 
                 if not self.is_connected:
-                    log.warning("mt5_health_check_disconnected")
+                    log.warning(
+                        "mt5_health_check_disconnected",
+                        consecutive_failures=consecutive_failures,
+                    )
                     try:
                         await self.reconnect()
+                        consecutive_failures = 0  # Reset on success
+                        log.info("mt5_health_check_reconnected")
                     except MT5ConnectionError:
-                        log.error("mt5_health_check_reconnect_failed")
+                        consecutive_failures += 1
+                        log.error(
+                            "mt5_health_check_reconnect_failed",
+                            consecutive_failures=consecutive_failures,
+                            max_failures=max_consecutive_failures,
+                        )
+                        if consecutive_failures >= max_consecutive_failures:
+                            log.critical(
+                                "mt5_health_check_max_failures_reached",
+                                message="Connection appears permanently lost",
+                            )
                 else:
+                    consecutive_failures = 0  # Reset on healthy check
                     log.debug("mt5_health_check_ok")
 
             except asyncio.CancelledError:

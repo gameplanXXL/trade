@@ -99,10 +99,11 @@ class Position(BaseModel):
     current_price: Decimal = Field(..., description="Current market price")
     stop_loss: Decimal | None = Field(default=None, description="Stop loss price")
     take_profit: Decimal | None = Field(default=None, description="Take profit price")
+    trailing_stop_pct: Decimal | None = Field(default=None, description="Trailing stop % for this position")
     profit: Decimal = Field(default=Decimal("0"), description="Unrealized P/L")
     status: PositionStatus = Field(default=PositionStatus.OPEN, description="Position status")
     opened_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    magic_number: int = Field(default=0, description="Magic number")
+    magic_number: int = Field(default=0, description="Magic number for order identification (broker-specific)")
 
 
 class OrderError(TradingError):
@@ -194,7 +195,7 @@ class OrderManager:
             comment=order.comment,
         )
 
-        # Track position
+        # Track position (M2 fix: store position-specific trailing_stop_pct)
         position = Position(
             ticket=ticket,
             symbol=canonical_symbol,
@@ -204,6 +205,7 @@ class OrderManager:
             current_price=fill_price,
             stop_loss=stop_loss,
             take_profit=order.take_profit,
+            trailing_stop_pct=trailing_pct,
             profit=Decimal("0"),
             magic_number=order.magic_number,
         )
@@ -357,6 +359,8 @@ class OrderManager:
     async def update_trailing_stops(self, prices: dict[str, Decimal]) -> None:
         """Update trailing stop losses based on current prices.
 
+        M2 fix: Uses position-specific trailing_stop_pct instead of default.
+
         Args:
             prices: Dict of symbol -> current price
         """
@@ -370,12 +374,15 @@ class OrderManager:
 
             position.current_price = current_price
 
+            # M2 fix: Use position-specific trailing_stop_pct, fallback to default
+            trailing_pct = position.trailing_stop_pct or self.default_trailing_stop_pct
+
             # Calculate new trailing SL
             # For BUY: SL follows price up
             # For SELL: SL follows price down
             if position.side == OrderSide.BUY:
                 # Price went up, move SL up
-                new_sl = current_price * (1 - self.default_trailing_stop_pct / 100)
+                new_sl = current_price * (1 - trailing_pct / 100)
                 if new_sl > position.stop_loss:
                     old_sl = position.stop_loss
                     position.stop_loss = new_sl
@@ -384,10 +391,11 @@ class OrderManager:
                         ticket=position.ticket,
                         old_sl=str(old_sl),
                         new_sl=str(new_sl),
+                        trailing_pct=str(trailing_pct),
                     )
             else:
                 # Price went down, move SL down
-                new_sl = current_price * (1 + self.default_trailing_stop_pct / 100)
+                new_sl = current_price * (1 + trailing_pct / 100)
                 if new_sl < position.stop_loss:
                     old_sl = position.stop_loss
                     position.stop_loss = new_sl
@@ -396,6 +404,7 @@ class OrderManager:
                         ticket=position.ticket,
                         old_sl=str(old_sl),
                         new_sl=str(new_sl),
+                        trailing_pct=str(trailing_pct),
                     )
 
             # Check if SL hit
