@@ -99,11 +99,15 @@ class Position(BaseModel):
     current_price: Decimal = Field(..., description="Current market price")
     stop_loss: Decimal | None = Field(default=None, description="Stop loss price")
     take_profit: Decimal | None = Field(default=None, description="Take profit price")
-    trailing_stop_pct: Decimal | None = Field(default=None, description="Trailing stop % for this position")
+    trailing_stop_pct: Decimal | None = Field(
+        default=None, description="Trailing stop % for this position"
+    )
     profit: Decimal = Field(default=Decimal("0"), description="Unrealized P/L")
     status: PositionStatus = Field(default=PositionStatus.OPEN, description="Position status")
     opened_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    magic_number: int = Field(default=0, description="Magic number for order identification (broker-specific)")
+    magic_number: int = Field(
+        default=0, description="Magic number for order identification (broker-specific)"
+    )
 
 
 class OrderError(TradingError):

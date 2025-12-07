@@ -226,7 +226,7 @@ class PaperTradingEngine:
                     take_profit=order.take_profit,
                     spread_cost=spread_cost,
                     magic_number=order.magic_number,
-                    comment=f"Paper trade via PaperTradingEngine",
+                    comment="Paper trade via PaperTradingEngine",
                 )
                 self._trade_ids[ticket] = trade.id
                 log.info(

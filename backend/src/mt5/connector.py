@@ -248,7 +248,8 @@ class MT5Connector:
         while not self._shutdown_event.is_set():
             try:
                 # Apply backoff if we had failures
-                effective_interval = interval_seconds * (backoff_multiplier ** min(consecutive_failures, 3))
+                backoff_exp = min(consecutive_failures, 3)
+                effective_interval = interval_seconds * (backoff_multiplier ** backoff_exp)
                 await asyncio.sleep(effective_interval)
 
                 if self._shutdown_event.is_set():
