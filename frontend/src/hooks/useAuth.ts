@@ -50,25 +50,26 @@ interface MeResponse {
 }
 
 // Fetch current user (for initial auth check)
-export function useCurrentUser() {
+export function useCurrentUser(options?: { enabled?: boolean }) {
   const setUser = useAuthStore((state) => state.setUser)
-  const clearAuth = useAuthStore((state) => state.clearAuth)
 
   return useQuery({
     queryKey: ['currentUser'],
-    queryFn: async (): Promise<User | null> => {
-      try {
-        const response = await apiClient.get<MeResponse>('/api/auth/me')
-        // response.data is {data: User}, so we need response.data.data
-        const user = response.data.data
-        setUser(user)
-        return user
-      } catch (error) {
-        // If unauthorized, clear auth state
-        clearAuth()
-        throw error
+    queryFn: async (): Promise<User> => {
+      const response = await apiClient.get<User>('/api/auth/me')
+      // Backend returns {data: User}, apiClient wraps as {data: {data: User}}
+      // But if backend already has 'data' key, apiClient returns as-is: {data: {data: User}}
+      // So response.data could be User directly or {data: User}
+      const user = 'data' in response.data
+        ? (response.data as unknown as { data: User }).data
+        : response.data
+      if (!user || typeof user !== 'object' || !('id' in user)) {
+        throw new Error('Invalid user data in response')
       }
+      setUser(user)
+      return user
     },
+    enabled: options?.enabled ?? true,
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)

@@ -41,7 +41,7 @@ start: check-docker install-deps stop
 	@docker compose up -d postgres redis
 	@echo "⏳ Waiting for databases..."
 	@sleep 3
-	@cd backend && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000 &
+	@cd backend && uv run uvicorn src.main:socket_app --reload --host 0.0.0.0 --port 8000 &
 	@sleep 2
 	@cd frontend && $(PNPM) dev --host 0.0.0.0 &
 	@echo ""
@@ -93,7 +93,7 @@ db:
 
 ## Start only backend
 backend: db
-	@cd backend && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+	@cd backend && uv run uvicorn src.main:socket_app --reload --host 0.0.0.0 --port 8000
 
 ## Start only frontend
 frontend:

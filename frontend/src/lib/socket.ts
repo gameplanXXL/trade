@@ -8,56 +8,71 @@ type AlertCallback = (data: Alert) => void
 class WebSocketClient {
   private socket: Socket | null = null
   private reconnectAttempts = 0
-  private maxReconnectAttempts = 5
-  private reconnectDelay = 1000 // Start with 1 second
+  private maxReconnectAttempts = 3 // Reduced to minimize console spam
+  private reconnectDelay = 2000 // Start with 2 seconds
   private maxReconnectDelay = 30000 // Max 30 seconds
-  private isConnecting = false
+  private shouldBeConnected = false
 
   connect(): void {
-    if (this.socket?.connected || this.isConnecting) {
+    this.shouldBeConnected = true
+
+    // Already connected or connecting
+    if (this.socket?.connected) {
       return
     }
 
-    this.isConnecting = true
+    // Reuse existing socket if available (handles StrictMode remount)
+    if (this.socket) {
+      if (!this.socket.connected) {
+        this.socket.connect()
+      }
+      return
+    }
+
     const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:8000'
 
     this.socket = io(wsUrl, {
       path: '/ws/socket.io',
       transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: this.maxReconnectAttempts,
-      reconnectionDelay: this.reconnectDelay,
-      reconnectionDelayMax: this.maxReconnectDelay,
+      autoConnect: false, // Don't connect immediately - wait for explicit connect()
+      reconnection: false, // We handle reconnection manually
     })
 
     this.socket.on('connect', () => {
-      console.log('WebSocket connected')
-      this.isConnecting = false
+      if (!this.shouldBeConnected) {
+        // Component unmounted during connection - disconnect silently
+        this.socket?.disconnect()
+        return
+      }
       this.reconnectAttempts = 0
       this.reconnectDelay = 1000
     })
 
     this.socket.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason)
-      this.isConnecting = false
-
-      // Auto-reconnect with exponential backoff
-      if (reason === 'io server disconnect') {
-        // Server disconnected, manual reconnect required
+      if (this.shouldBeConnected && reason === 'io server disconnect') {
+        // Server disconnected us - try to reconnect
         this.scheduleReconnect()
       }
     })
 
-    this.socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error)
-      this.isConnecting = false
-      this.scheduleReconnect()
+    this.socket.on('connect_error', () => {
+      // Only try to reconnect if we still want to be connected
+      if (this.shouldBeConnected) {
+        this.scheduleReconnect()
+      }
     })
+
+    // Now actually connect
+    this.socket.connect()
   }
 
   private scheduleReconnect(): void {
+    if (!this.shouldBeConnected) {
+      return
+    }
+
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached')
+      // Silently stop - no need to spam console
       return
     }
 
@@ -67,25 +82,24 @@ class WebSocketClient {
       this.maxReconnectDelay
     )
 
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
-
     setTimeout(() => {
-      this.connect()
+      if (this.shouldBeConnected && this.socket && !this.socket.connected) {
+        this.socket.connect()
+      }
     }, delay)
   }
 
   disconnect(): void {
-    if (this.socket) {
-      this.socket.disconnect()
-      this.socket = null
-    }
-    this.isConnecting = false
+    this.shouldBeConnected = false
     this.reconnectAttempts = 0
+    // Don't destroy socket - just disconnect. Allows clean reconnect on remount.
+    if (this.socket?.connected) {
+      this.socket.disconnect()
+    }
   }
 
   joinTeam(teamId: number): void {
     if (!this.socket?.connected) {
-      console.warn('Cannot join team: socket not connected')
       return
     }
     this.socket.emit('join_team', { team_id: teamId })
@@ -93,7 +107,6 @@ class WebSocketClient {
 
   leaveTeam(teamId: number): void {
     if (!this.socket?.connected) {
-      console.warn('Cannot leave team: socket not connected')
       return
     }
     this.socket.emit('leave_team', { team_id: teamId })
@@ -101,7 +114,6 @@ class WebSocketClient {
 
   onTeamStatusChanged(callback: TeamStatusCallback): void {
     if (!this.socket) {
-      console.warn('Cannot subscribe to team status: socket not initialized')
       return
     }
     this.socket.on('team:status_changed', callback)
@@ -109,7 +121,6 @@ class WebSocketClient {
 
   onTradeExecuted(callback: TradeCallback): void {
     if (!this.socket) {
-      console.warn('Cannot subscribe to trades: socket not initialized')
       return
     }
     this.socket.on('trade:executed', callback)
@@ -117,7 +128,6 @@ class WebSocketClient {
 
   onAlert(callback: AlertCallback): void {
     if (!this.socket) {
-      console.warn('Cannot subscribe to alerts: socket not initialized')
       return
     }
     this.socket.on('alert:crash', callback)
