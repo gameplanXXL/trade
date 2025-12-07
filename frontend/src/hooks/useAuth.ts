@@ -44,11 +44,6 @@ export function useLogout() {
   })
 }
 
-// Response type for /api/auth/me endpoint
-interface MeResponse {
-  data: User
-}
-
 // Fetch current user (for initial auth check)
 export function useCurrentUser(options?: { enabled?: boolean }) {
   const setUser = useAuthStore((state) => state.setUser)
@@ -58,7 +53,6 @@ export function useCurrentUser(options?: { enabled?: boolean }) {
     queryFn: async (): Promise<User> => {
       const response = await apiClient.get<User>('/api/auth/me')
       // Backend returns {data: User}, apiClient wraps as {data: {data: User}}
-      // But if backend already has 'data' key, apiClient returns as-is: {data: {data: User}}
       // So response.data could be User directly or {data: User}
       const user = 'data' in response.data
         ? (response.data as unknown as { data: User }).data
